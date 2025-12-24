@@ -20,15 +20,15 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 space-y-4">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 space-y-4">
       {/* Header */}
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
         <BarChart3 className="w-5 h-5" />
         Selection Stats
       </h3>
 
       {/* Episode count */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-600 dark:text-gray-300">
         {selectedIndices.size.toLocaleString()} episode{selectedIndices.size !== 1 ? 's' : ''} selected
       </div>
 
@@ -36,7 +36,7 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
       <div className="space-y-4">
         {stats.map((fieldStat) => (
           <div key={fieldStat.field} className="border-t pt-3">
-            <h4 className="text-sm font-medium text-gray-700 mb-2 capitalize">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 capitalize">
               {fieldStat.field.replace(/_/g, ' ')}
             </h4>
 
@@ -44,19 +44,19 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
             {fieldStat.type === 'boolean' && (
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">True</span>
+                  <span className="text-gray-600 dark:text-gray-300">True</span>
                   <span className="font-medium text-green-600">
                     {fieldStat.trueCount} ({fieldStat.truePercent}%)
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">False</span>
+                  <span className="text-gray-600 dark:text-gray-300">False</span>
                   <span className="font-medium text-red-600">
                     {fieldStat.falseCount} ({fieldStat.falsePercent}%)
                   </span>
                 </div>
                 {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
                   <div
                     className="bg-green-500 h-2 rounded-full transition-all"
                     style={{ width: `${fieldStat.truePercent}%` }}
@@ -69,15 +69,15 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
             {fieldStat.type === 'numeric' && (
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <span className="text-gray-600">Min:</span>
+                  <span className="text-gray-600 dark:text-gray-300">Min:</span>
                   <span className="ml-1 font-medium">{fieldStat.min?.toFixed(2)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Max:</span>
+                  <span className="text-gray-600 dark:text-gray-300">Max:</span>
                   <span className="ml-1 font-medium">{fieldStat.max?.toFixed(2)}</span>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-gray-600">Mean:</span>
+                  <span className="text-gray-600 dark:text-gray-300">Mean:</span>
                   <span className="ml-1 font-medium">{fieldStat.mean?.toFixed(2)}</span>
                 </div>
               </div>
@@ -89,7 +89,7 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
                 {fieldStat.categories.slice(0, 5).map((cat) => (
                   <div key={cat.value} className="flex items-center justify-between text-sm">
                     <span
-                      className="text-gray-600 truncate max-w-[140px]"
+                      className="text-gray-600 dark:text-gray-400 truncate max-w-[140px]"
                       title={cat.value}
                     >
                       {cat.value}
@@ -100,7 +100,7 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
                   </div>
                 ))}
                 {fieldStat.categories.length > 5 && (
-                  <div className="text-xs text-gray-500 italic">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">
                     +{fieldStat.categories.length - 5} more categor{fieldStat.categories.length - 5 === 1 ? 'y' : 'ies'}
                   </div>
                 )}

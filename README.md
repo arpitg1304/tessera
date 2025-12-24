@@ -245,6 +245,21 @@ docker-compose -f docker-compose.prod.yml up -d
 
 Contributions welcome! Please open an issue first to discuss changes.
 
+## Related Tools
+
+Tessera is inspired by and complementary to several existing embedding visualization tools:
+
+- **[TensorFlow Projector](https://projector.tensorflow.org/)** - Google's web-based embedding visualizer with t-SNE, UMAP, and PCA. Great for general-purpose embedding exploration. Tessera adds robotics-specific features like diversity sampling and metadata filtering.
+- **[Embedding Projector](https://github.com/tensorflow/embedding-projector-standalone)** - Standalone version of TF Projector
+- **[Atlas](https://github.com/nomic-ai/nomic)** - Nomic's embedding visualization platform with collaborative features
+- **[Weights & Biases](https://wandb.ai/)** - MLOps platform with embedding visualization in experiment tracking
+
+Tessera differentiates by:
+- **Robotics Focus**: Built for episode embeddings with task/success metadata
+- **Diversity Sampling**: K-means and stratified sampling for dataset curation
+- **No Login Required**: Ephemeral projects with shareable links
+- **Lightweight**: Self-hostable with Docker, no cloud dependencies
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.

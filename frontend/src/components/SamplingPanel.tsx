@@ -1,7 +1,7 @@
 // Sampling strategy panel
 
 import { useState } from 'react';
-import { Shuffle, Target, BarChart3, Loader2 } from 'lucide-react';
+import { Shuffle, Target, BarChart3, Loader2, Grid3x3, ChevronDown, ChevronRight } from 'lucide-react';
 import { useProjectStore } from '../stores/projectStore';
 import { useSampling } from '../hooks/useSampling';
 import type { VisualizationData } from '../types';
@@ -11,7 +11,7 @@ interface SamplingPanelProps {
   data: VisualizationData;
 }
 
-type Strategy = 'kmeans' | 'stratified' | 'random';
+type Strategy = 'kmeans' | 'stratified' | 'random' | 'cluster';
 
 const STRATEGY_INFO = {
   kmeans: {
@@ -23,6 +23,11 @@ const STRATEGY_INFO = {
     name: 'Stratified',
     description: 'Maintains distribution across metadata categories',
     icon: BarChart3,
+  },
+  cluster: {
+    name: 'Sample from Clusters',
+    description: 'Evenly samples from each cluster (requires clustering first)',
+    icon: Grid3x3,
   },
   random: {
     name: 'Random',
@@ -38,11 +43,67 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
     Object.keys(data.metadata)[0] || ''
   );
   const [selectionName, setSelectionName] = useState('');
+  const [resultsExpanded, setResultsExpanded] = useState(false);
 
-  const { lastSamplingResult } = useProjectStore();
+  const { lastSamplingResult, clusterLabels, clusterMetadata, setLastSamplingResult, selectIndices } = useProjectStore();
   const samplingMutation = useSampling(projectId);
 
+  // Client-side cluster sampling
+  const handleClusterSampling = () => {
+    if (!clusterLabels) return;
+
+    // Group indices by cluster
+    const clusterGroups: Record<number, number[]> = {};
+    clusterLabels.forEach((label, idx) => {
+      if (label === -1) return; // Skip noise points
+      if (!clusterGroups[label]) {
+        clusterGroups[label] = [];
+      }
+      clusterGroups[label].push(idx);
+    });
+
+    const clusterIds = Object.keys(clusterGroups).map(Number);
+    const samplesPerCluster = Math.floor(nSamples / clusterIds.length);
+    const remainder = nSamples % clusterIds.length;
+
+    const selectedIndices: number[] = [];
+
+    // Sample evenly from each cluster
+    clusterIds.forEach((clusterId, clusterIdx) => {
+      const clusterIndices = clusterGroups[clusterId];
+      const samplesToTake = samplesPerCluster + (clusterIdx < remainder ? 1 : 0);
+      const actualSamples = Math.min(samplesToTake, clusterIndices.length);
+
+      // Random sample from this cluster
+      const shuffled = [...clusterIndices].sort(() => Math.random() - 0.5);
+      selectedIndices.push(...shuffled.slice(0, actualSamples));
+    });
+
+    // Calculate coverage score (use number of clusters covered)
+    const coverageScore = clusterIds.length / (clusterMetadata?.n_clusters || clusterIds.length);
+
+    // Get episode IDs for selected indices
+    const selectedEpisodeIds = selectedIndices.map(idx => data.episode_ids[idx]);
+
+    // Update store with selection
+    setLastSamplingResult({
+      selected_indices: selectedIndices,
+      selected_episode_ids: selectedEpisodeIds,
+      n_samples: selectedIndices.length,
+      strategy: 'cluster',
+      coverage_score: coverageScore,
+    });
+    selectIndices(selectedIndices);
+  };
+
   const handleSample = () => {
+    // Handle cluster sampling on the client side
+    if (strategy === 'cluster') {
+      handleClusterSampling();
+      return;
+    }
+
+    // Server-side sampling for other strategies
     samplingMutation.mutate({
       strategy,
       n_samples: nSamples,
@@ -54,58 +115,49 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
   const StrategyIcon = STRATEGY_INFO[strategy].icon;
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 space-y-4">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
         <Target className="w-5 h-5" />
         Sampling
       </h3>
 
       {/* Strategy selector */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Strategy</label>
-        <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Strategy</label>
+        <select
+          value={strategy}
+          onChange={(e) => setStrategy(e.target.value as Strategy)}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+        >
           {(Object.keys(STRATEGY_INFO) as Strategy[]).map((s) => {
             const info = STRATEGY_INFO[s];
-            const Icon = info.icon;
-            const isDisabled = s === 'stratified' && Object.keys(data.metadata).length === 0;
+            const isDisabled =
+              (s === 'stratified' && Object.keys(data.metadata).length === 0) ||
+              (s === 'cluster' && !clusterLabels);
 
             return (
-              <button
-                key={s}
-                onClick={() => setStrategy(s)}
-                disabled={isDisabled}
-                className={`
-                  w-full flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left
-                  ${strategy === s
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                  }
-                  ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                <Icon className={`w-5 h-5 mt-0.5 ${strategy === s ? 'text-primary-600' : 'text-gray-400'}`} />
-                <div>
-                  <p className={`font-medium ${strategy === s ? 'text-primary-900' : 'text-gray-900'}`}>
-                    {info.name}
-                  </p>
-                  <p className="text-sm text-gray-500">{info.description}</p>
-                </div>
-              </button>
+              <option key={s} value={s} disabled={isDisabled}>
+                {info.name}
+                {isDisabled && ' (not available)'}
+              </option>
             );
           })}
-        </div>
+        </select>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {STRATEGY_INFO[strategy].description}
+        </p>
       </div>
 
       {/* Stratify by (for stratified sampling) */}
       {strategy === 'stratified' && Object.keys(data.metadata).length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Stratify by
           </label>
           <select
             value={stratifyBy}
             onChange={(e) => setStratifyBy(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
           >
             {Object.keys(data.metadata).map((key) => (
               <option key={key} value={key}>
@@ -118,7 +170,7 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
 
       {/* Number of samples */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
           Number of Samples: {nSamples.toLocaleString()}
         </label>
         <input
@@ -128,9 +180,9 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
           step={data.n_episodes > 100 ? Math.max(1, Math.floor(data.n_episodes / 100)) : 1}
           value={nSamples}
           onChange={(e) => setNSamples(parseInt(e.target.value))}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+          className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
         />
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
           <span>1</span>
           <span>{data.n_episodes.toLocaleString()}</span>
         </div>
@@ -138,7 +190,7 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
 
       {/* Selection name (optional) */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
           Save as (optional)
         </label>
         <input
@@ -146,7 +198,7 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
           value={selectionName}
           onChange={(e) => setSelectionName(e.target.value)}
           placeholder="e.g., diverse_10k"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
         />
       </div>
 
@@ -171,24 +223,36 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
 
       {/* Results */}
       {lastSamplingResult && (
-        <div className="border-t pt-4">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Last Result</h4>
-          <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm">
-            <p>
-              <span className="text-gray-600">Strategy:</span>{' '}
-              <span className="font-medium">{lastSamplingResult.strategy}</span>
-            </p>
-            <p>
-              <span className="text-gray-600">Samples:</span>{' '}
-              <span className="font-medium">{lastSamplingResult.n_samples.toLocaleString()}</span>
-            </p>
-            <p>
-              <span className="text-gray-600">Coverage:</span>{' '}
-              <span className="font-medium text-primary-600">
-                {(lastSamplingResult.coverage_score * 100).toFixed(1)}%
-              </span>
-            </p>
-          </div>
+        <div className="border-t pt-3">
+          <button
+            onClick={() => setResultsExpanded(!resultsExpanded)}
+            className="flex items-center justify-between w-full mb-2 hover:opacity-70 transition-opacity"
+          >
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">Last Result</h4>
+            {resultsExpanded ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+          </button>
+          {resultsExpanded && (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-1 text-sm">
+              <p>
+                <span className="text-gray-600 dark:text-gray-300">Strategy:</span>{' '}
+                <span className="font-medium">{lastSamplingResult.strategy}</span>
+              </p>
+              <p>
+                <span className="text-gray-600 dark:text-gray-300">Samples:</span>{' '}
+                <span className="font-medium">{lastSamplingResult.n_samples.toLocaleString()}</span>
+              </p>
+              <p>
+                <span className="text-gray-600 dark:text-gray-300">Coverage:</span>{' '}
+                <span className="font-medium text-primary-600">
+                  {(lastSamplingResult.coverage_score * 100).toFixed(1)}%
+                </span>
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

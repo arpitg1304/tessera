@@ -1,6 +1,7 @@
 // Project metadata display component
 
-import { Calendar, Clock, Database, Layers } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Clock, Database, Layers, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Project } from '../types';
 
 interface ProjectInfoProps {
@@ -8,6 +9,7 @@ interface ProjectInfoProps {
 }
 
 export function ProjectInfo({ project }: ProjectInfoProps) {
+  const [expanded, setExpanded] = useState(false);
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
@@ -36,21 +38,27 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
   const expiry = getExpiryStatus();
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Project Info</h3>
-        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-          {project.id}
-        </span>
-      </div>
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center justify-between w-full mb-3 hover:opacity-70 transition-opacity"
+      >
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Project Info</h3>
+        {expanded ? (
+          <ChevronDown className="w-5 h-5 text-gray-500" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-gray-500" />
+        )}
+      </button>
 
-      <div className="space-y-3">
+      {expanded && (
+        <div className="space-y-3">
         {/* Episodes count */}
         <div className="flex items-center gap-3">
           <Database className="w-5 h-5 text-gray-400" />
           <div>
-            <p className="text-sm text-gray-600">Episodes</p>
-            <p className="font-medium">{project.n_episodes.toLocaleString()}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Episodes</p>
+            <p className="font-medium text-gray-900 dark:text-white">{project.n_episodes.toLocaleString()}</p>
           </div>
         </div>
 
@@ -58,8 +66,8 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
         <div className="flex items-center gap-3">
           <Layers className="w-5 h-5 text-gray-400" />
           <div>
-            <p className="text-sm text-gray-600">Embedding Dimension</p>
-            <p className="font-medium">{project.embedding_dim}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Embedding Dimension</p>
+            <p className="font-medium text-gray-900 dark:text-white">{project.embedding_dim}</p>
           </div>
         </div>
 
@@ -67,8 +75,8 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
         <div className="flex items-center gap-3">
           <Calendar className="w-5 h-5 text-gray-400" />
           <div>
-            <p className="text-sm text-gray-600">Created</p>
-            <p className="font-medium">{formatDate(project.created_at)}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Created</p>
+            <p className="font-medium text-gray-900 dark:text-white">{formatDate(project.created_at)}</p>
           </div>
         </div>
 
@@ -76,14 +84,14 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
         <div className="flex items-center gap-3">
           <Clock className="w-5 h-5 text-gray-400" />
           <div>
-            <p className="text-sm text-gray-600">Retention</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Retention</p>
             <p className={`font-medium ${expiry.color}`}>{expiry.text}</p>
           </div>
         </div>
 
         {/* Available metadata */}
         <div className="border-t pt-3 mt-3">
-          <p className="text-sm text-gray-600 mb-2">Available Metadata</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Available Metadata</p>
           <div className="flex flex-wrap gap-2">
             {project.has_success_labels && (
               <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
@@ -101,7 +109,7 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
               </span>
             )}
             {!project.has_success_labels && !project.has_task_labels && !project.has_episode_length && (
-              <span className="text-xs text-gray-500">No metadata available</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">No metadata available</span>
             )}
           </div>
         </div>
@@ -109,19 +117,20 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
         {/* Dataset name if available */}
         {project.dataset_name && (
           <div className="border-t pt-3 mt-3">
-            <p className="text-sm text-gray-600">Dataset</p>
-            <p className="font-medium">{project.dataset_name}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Dataset</p>
+            <p className="font-medium text-gray-900 dark:text-white">{project.dataset_name}</p>
           </div>
         )}
 
         {/* Description if available */}
         {project.description && (
           <div className="border-t pt-3 mt-3">
-            <p className="text-sm text-gray-600">Description</p>
-            <p className="text-sm">{project.description}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Description</p>
+            <p className="text-sm text-gray-900 dark:text-gray-200">{project.description}</p>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

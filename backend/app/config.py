@@ -40,6 +40,10 @@ class Config:
     # Project ID settings
     PROJECT_ID_LENGTH: int = 8
 
+    # Admin panel security
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")  # Change in production!
+    UPLOADS_PER_DAY_LIMIT: int = 10  # Max uploads per IP per day
+
     @classmethod
     def ensure_directories(cls) -> None:
         """Ensure all required directories exist."""

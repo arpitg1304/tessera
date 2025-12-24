@@ -71,3 +71,6 @@ Thumbs.db
 htmlcov/
 .pytest_cache/
 .tox/
+
+# Project planning
+ideas.md

@@ -7,6 +7,7 @@ import type {
   SamplingResponse,
   Selection,
   ColorScheme,
+  ClusterMetadata,
 } from '../types';
 import type { MetadataFilter } from '../utils/filtering';
 
@@ -42,6 +43,12 @@ interface ProjectState {
   showSelectedOnly: boolean;
   setShowSelectedOnly: (show: boolean) => void;
 
+  // Cluster state
+  clusterLabels: number[] | null;
+  setClusterLabels: (labels: number[] | null) => void;
+  clusterMetadata: ClusterMetadata | null;
+  setClusterMetadata: (metadata: ClusterMetadata | null) => void;
+
   // Metadata filters
   metadataFilters: MetadataFilter[];
   addMetadataFilter: (filter: MetadataFilter) => void;
@@ -74,6 +81,8 @@ const initialState = {
   isUploading: false,
   uploadProgress: 0,
   error: null,
+  clusterLabels: null,
+  clusterMetadata: null,
 };
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
@@ -138,6 +147,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   setColorBy: (scheme) => set({ colorBy: scheme }),
   setShowSelectedOnly: (show) => set({ showSelectedOnly: show }),
+
+  setClusterLabels: (labels) => set({ clusterLabels: labels }),
+  setClusterMetadata: (metadata) => set({ clusterMetadata: metadata }),
 
   addMetadataFilter: (filter) => {
     const current = get().metadataFilters;

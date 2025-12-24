@@ -76,20 +76,20 @@ export function CodeSnippetModal({ isOpen, onClose, code, episodeCount }: CodeSn
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl max-w-3xl w-full mx-4 p-6 max-h-[80vh] flex flex-col">
+      <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-3xl w-full mx-4 p-6 max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Export Successful
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {episodeCount.toLocaleString()} episodes exported
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100"
           >
             <X className="w-5 h-5" />
           </button>
@@ -98,10 +98,10 @@ export function CodeSnippetModal({ isOpen, onClose, code, episodeCount }: CodeSn
         {/* Code snippet section */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700">Python Code Snippet</h3>
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Python Code Snippet</h3>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
             >
               {copied ? (
                 <>
@@ -132,8 +132,8 @@ export function CodeSnippetModal({ isOpen, onClose, code, episodeCount }: CodeSn
         </div>
 
         {/* Footer */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 mb-3">
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
             Use this code snippet to load the selected episodes in your training pipeline.
           </p>
           <button

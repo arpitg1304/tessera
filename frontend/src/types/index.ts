@@ -109,4 +109,29 @@ export interface EpisodePoint {
 }
 
 // Color schemes
-export type ColorScheme = 'success' | 'task' | 'episode_length' | 'dataset' | 'none';
+export type ColorScheme = 'success' | 'task' | 'episode_length' | 'dataset' | 'cluster' | 'none';
+
+// Clustering
+export interface ClusterRequest {
+  method: 'kmeans' | 'dbscan';
+  n_clusters?: number; // For kmeans, auto-select if not provided
+  min_cluster_size?: number; // For DBSCAN
+  min_samples?: number; // For DBSCAN
+}
+
+export interface ClusterMetadata {
+  method: string;
+  n_clusters: number;
+  cluster_sizes: Record<string, number>;
+  inertia?: number; // For kmeans
+  n_noise?: number; // For DBSCAN
+  noise_ratio?: number; // For DBSCAN
+  eps?: number; // For DBSCAN
+  min_samples?: number; // For DBSCAN
+}
+
+export interface ClusterResponse {
+  cluster_labels: number[];
+  episode_ids: string[];
+  metadata: ClusterMetadata;
+}

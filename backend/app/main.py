@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import config
 from .database import init_db
-from .routes import upload, projects, visualization, sampling, export
+from .routes import upload, projects, visualization, sampling, export, similarity, admin
 from .services.storage import ensure_storage_path
 from .utils.limits import get_storage_stats
 
@@ -104,6 +104,18 @@ app.include_router(
     export.router,
     prefix="/api/project",
     tags=["Export"]
+)
+
+app.include_router(
+    similarity.router,
+    prefix="/api",
+    tags=["Similarity"]
+)
+
+app.include_router(
+    admin.router,
+    prefix="/api",
+    tags=["Admin"]
 )
 
 

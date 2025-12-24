@@ -11,6 +11,8 @@ import type {
   Selection,
   ExportRequest,
   ValidationResult,
+  ClusterRequest,
+  ClusterResponse,
 } from '../types';
 
 const API_BASE = '/api';
@@ -127,6 +129,15 @@ export async function exportSelection(
   const response = await api.post(`/project/${projectId}/export`, request, {
     responseType: 'blob',
   });
+  return response.data;
+}
+
+// Clustering endpoints
+export async function clusterProject(
+  projectId: string,
+  request: ClusterRequest
+): Promise<ClusterResponse> {
+  const response = await api.post<ClusterResponse>(`/project/${projectId}/cluster`, request);
   return response.data;
 }
 

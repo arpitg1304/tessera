@@ -82,7 +82,7 @@ export function UploadZone({ onUploadSuccess }: UploadZoneProps) {
             transition-all duration-200
             ${isDragActive
               ? 'border-primary-500 bg-primary-50'
-              : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+              : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 hover:bg-gray-50'
             }
           `}
         >
@@ -92,21 +92,21 @@ export function UploadZone({ onUploadSuccess }: UploadZoneProps) {
             <p className="text-lg text-primary-600">Drop your embeddings file here</p>
           ) : (
             <>
-              <p className="text-lg text-gray-600 mb-2">
-                Drag and drop your <code className="bg-gray-100 px-1 rounded">.h5</code> file here
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
+                Drag and drop your <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">.h5</code> file here
               </p>
               <p className="text-sm text-gray-400">or click to select a file</p>
             </>
           )}
         </div>
       ) : (
-        <div className="border rounded-xl p-6 bg-white shadow-sm">
+        <div className="border rounded-xl p-6 bg-white dark:bg-gray-900 shadow-sm">
           {/* File info */}
           <div className="flex items-center gap-3 mb-4">
             <FileCheck className="w-8 h-8 text-primary-500" />
             <div>
-              <p className="font-medium text-gray-900">{selectedFile.name}</p>
-              <p className="text-sm text-gray-500">
+              <p className="font-medium text-gray-900 dark:text-white">{selectedFile.name}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
               </p>
             </div>
@@ -114,7 +114,7 @@ export function UploadZone({ onUploadSuccess }: UploadZoneProps) {
 
           {/* Validation status */}
           {validating && (
-            <div className="flex items-center gap-2 text-gray-600 mb-4">
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4">
               <Loader2 className="w-5 h-5 animate-spin" />
               <span>Validating file format...</span>
             </div>
@@ -164,7 +164,7 @@ export function UploadZone({ onUploadSuccess }: UploadZoneProps) {
           <div className="flex gap-3">
             <button
               onClick={reset}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               Choose different file
             </button>
@@ -175,7 +175,7 @@ export function UploadZone({ onUploadSuccess }: UploadZoneProps) {
                 flex-1 px-4 py-2 rounded-lg font-medium transition-colors
                 ${validationResult?.valid
                   ? 'bg-primary-600 text-white hover:bg-primary-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
                 }
               `}
             >
