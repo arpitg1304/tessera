@@ -9,11 +9,14 @@ import { ControlPanel } from '../components/ControlPanel';
 import { SamplingPanel } from '../components/SamplingPanel';
 import { ProjectInfo } from '../components/ProjectInfo';
 import { ExportModal } from '../components/ExportModal';
+import { CodeSnippetModal } from '../components/CodeSnippetModal';
+import { SelectionStats } from '../components/SelectionStats';
 import { useProjectStore } from '../stores/projectStore';
 
 export function Dashboard() {
   const { projectId } = useParams<{ projectId: string }>();
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [codeSnippetData, setCodeSnippetData] = useState<{ code: string; count: number } | null>(null);
 
   const { data: project, isLoading: projectLoading, error: projectError } = useProject(projectId);
   const { data: vizData, isLoading: vizLoading, error: vizError } = useVisualization(projectId);
@@ -143,7 +146,7 @@ export function Dashboard() {
 
             {/* Visualization tips */}
             {vizData && (
-              <div className="mt-4 text-sm text-gray-500">
+              <div className="mt-4 text-sm text-gray-500 space-y-1">
                 <p>
                   <strong>Tips:</strong> Click on points to select/deselect. Use mouse wheel to zoom, drag to pan.
                   {!vizData.umap_cached && (
@@ -152,12 +155,18 @@ export function Dashboard() {
                     </span>
                   )}
                 </p>
+                <p>
+                  <strong>Keyboard:</strong> S select • P pan • B box • L lasso • C clear • Shift add • Alt remove
+                </p>
               </div>
             )}
           </div>
 
-          {/* Sampling panel */}
-          <div className="lg:col-span-1">
+          {/* Sampling and stats panel */}
+          <div className="lg:col-span-1 space-y-6">
+            {vizData && selectedIndices.size > 0 && (
+              <SelectionStats data={vizData} selectedIndices={selectedIndices} />
+            )}
             {vizData && projectId && (
               <SamplingPanel projectId={projectId} data={vizData} />
             )}
@@ -171,6 +180,21 @@ export function Dashboard() {
           projectId={projectId}
           isOpen={exportModalOpen}
           onClose={() => setExportModalOpen(false)}
+          onExportSuccess={(codeSnippet, episodeCount) => {
+            if (codeSnippet) {
+              setCodeSnippetData({ code: codeSnippet, count: episodeCount });
+            }
+          }}
+        />
+      )}
+
+      {/* Code snippet modal */}
+      {codeSnippetData && (
+        <CodeSnippetModal
+          isOpen={true}
+          onClose={() => setCodeSnippetData(null)}
+          code={codeSnippetData.code}
+          episodeCount={codeSnippetData.count}
         />
       )}
     </div>

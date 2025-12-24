@@ -1,0 +1,114 @@
+// Selection statistics panel component
+
+import { useMemo } from 'react';
+import { BarChart3 } from 'lucide-react';
+import { computeSelectionStats } from '../utils/statistics';
+import type { VisualizationData } from '../types';
+
+interface SelectionStatsProps {
+  data: VisualizationData;
+  selectedIndices: Set<number>;
+}
+
+export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
+  const stats = useMemo(() => {
+    return computeSelectionStats(data.metadata, selectedIndices);
+  }, [data.metadata, selectedIndices]);
+
+  if (selectedIndices.size === 0 || stats.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4 space-y-4">
+      {/* Header */}
+      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <BarChart3 className="w-5 h-5" />
+        Selection Stats
+      </h3>
+
+      {/* Episode count */}
+      <div className="text-sm text-gray-600">
+        {selectedIndices.size.toLocaleString()} episode{selectedIndices.size !== 1 ? 's' : ''} selected
+      </div>
+
+      {/* Statistics by field */}
+      <div className="space-y-4">
+        {stats.map((fieldStat) => (
+          <div key={fieldStat.field} className="border-t pt-3">
+            <h4 className="text-sm font-medium text-gray-700 mb-2 capitalize">
+              {fieldStat.field.replace(/_/g, ' ')}
+            </h4>
+
+            {/* Boolean field stats */}
+            {fieldStat.type === 'boolean' && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">True</span>
+                  <span className="font-medium text-green-600">
+                    {fieldStat.trueCount} ({fieldStat.truePercent}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">False</span>
+                  <span className="font-medium text-red-600">
+                    {fieldStat.falseCount} ({fieldStat.falsePercent}%)
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                  <div
+                    className="bg-green-500 h-2 rounded-full transition-all"
+                    style={{ width: `${fieldStat.truePercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Numeric field stats */}
+            {fieldStat.type === 'numeric' && (
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Min:</span>
+                  <span className="ml-1 font-medium">{fieldStat.min?.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Max:</span>
+                  <span className="ml-1 font-medium">{fieldStat.max?.toFixed(2)}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-600">Mean:</span>
+                  <span className="ml-1 font-medium">{fieldStat.mean?.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Categorical field stats */}
+            {fieldStat.type === 'categorical' && fieldStat.categories && (
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {fieldStat.categories.slice(0, 5).map((cat) => (
+                  <div key={cat.value} className="flex items-center justify-between text-sm">
+                    <span
+                      className="text-gray-600 truncate max-w-[140px]"
+                      title={cat.value}
+                    >
+                      {cat.value}
+                    </span>
+                    <span className="font-medium text-primary-600">
+                      {cat.count} ({cat.percent.toFixed(1)}%)
+                    </span>
+                  </div>
+                ))}
+                {fieldStat.categories.length > 5 && (
+                  <div className="text-xs text-gray-500 italic">
+                    +{fieldStat.categories.length - 5} more categor{fieldStat.categories.length - 5 === 1 ? 'y' : 'ies'}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

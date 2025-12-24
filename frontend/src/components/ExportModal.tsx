@@ -9,9 +9,10 @@ interface ExportModalProps {
   projectId: string;
   isOpen: boolean;
   onClose: () => void;
+  onExportSuccess?: (codeSnippet: string | null, episodeCount: number) => void;
 }
 
-export function ExportModal({ projectId, isOpen, onClose }: ExportModalProps) {
+export function ExportModal({ projectId, isOpen, onClose, onExportSuccess }: ExportModalProps) {
   const [format, setFormat] = useState<'json' | 'csv'>('json');
   const [includeMetadata, setIncludeMetadata] = useState(true);
 
@@ -24,13 +25,20 @@ export function ExportModal({ projectId, isOpen, onClose }: ExportModalProps) {
   const selectionId = lastSamplingResult?.selection_id;
 
   const handleExport = async () => {
-    await exportMutation.mutateAsync({
+    const result = await exportMutation.mutateAsync({
       format,
       selected_indices: hasSelection ? Array.from(selectedIndices) : undefined,
       selection_id: !hasSelection && selectionId ? selectionId : undefined,
       include_metadata: includeMetadata,
     });
+
+    // Close the export modal
     onClose();
+
+    // Notify parent about successful export with code snippet
+    if (onExportSuccess && format === 'json' && result.codeSnippet) {
+      onExportSuccess(result.codeSnippet, result.exportData?.n_episodes || selectedIndices.size);
+    }
   };
 
   return (

@@ -6,6 +6,9 @@ import { ScatterplotLayer } from '@deck.gl/layers';
 import { OrthographicView } from '@deck.gl/core';
 import { useProjectStore } from '../stores/projectStore';
 import type { VisualizationData, ColorScheme } from '../types';
+import { applyFilters } from '../utils/filtering';
+import { SelectionOverlay, BoxRegion, LassoRegion } from './SelectionOverlay';
+import { isPointInBox, isPointInPolygon } from '../utils/selectionGeometry';
 import {
   Maximize2,
   Minimize2,
@@ -15,6 +18,8 @@ import {
   Download,
   MousePointer2,
   Hand,
+  Square,
+  Lasso,
 } from 'lucide-react';
 
 interface ScatterPlotProps {
@@ -97,10 +102,11 @@ function rgbaToCSS(color: [number, number, number, number]): string {
 }
 
 export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProps) {
-  const { selectedIndices, toggleSelection, colorBy, showSelectedOnly } = useProjectStore();
+  const { selectedIndices, toggleSelection, colorBy, showSelectedOnly, metadataFilters, selectByRegion, clearSelection } = useProjectStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [interactionMode, setInteractionMode] = useState<'select' | 'pan'>('select');
+  const [interactionMode, setInteractionMode] = useState<'select' | 'pan' | 'box' | 'lasso'>('select');
   const [viewState, setViewState] = useState<any>(null);
+  const [modifierKey, setModifierKey] = useState<'shift' | 'alt' | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const deckRef = useRef<any>(null);
 
@@ -138,6 +144,9 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
 
   // Transform data for deck.gl
   const points = useMemo(() => {
+    // Apply metadata filters first
+    const filteredIndices = applyFilters(data.metadata, metadataFilters, data.n_episodes);
+
     return data.coordinates
       .map((coord, idx) => ({
         position: coord as [number, number],
@@ -145,8 +154,18 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
         index: idx,
         selected: selectedIndices.has(idx),
       }))
-      .filter((point) => !showSelectedOnly || point.selected);
-  }, [data, selectedIndices, showSelectedOnly]);
+      .filter((point) => {
+        // Apply metadata filters
+        if (metadataFilters.length > 0 && !filteredIndices.has(point.index)) {
+          return false;
+        }
+        // Apply "show selected only"
+        if (showSelectedOnly && !point.selected) {
+          return false;
+        }
+        return true;
+      });
+  }, [data, selectedIndices, showSelectedOnly, metadataFilters]);
 
   const metadata = data.metadata;
 
@@ -191,6 +210,45 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
       }
     },
     [toggleSelection, interactionMode]
+  );
+
+  // Handle region selection (box or lasso)
+  const handleRegionSelection = useCallback(
+    (region: BoxRegion | LassoRegion) => {
+      if (!viewState) return;
+
+      // Get the deck.gl viewport for accurate coordinate transformation
+      const deck = deckRef.current?.deck;
+      if (!deck) return;
+
+      const viewport = deck.getViewports()[0];
+      if (!viewport) return;
+
+      // Find all points within the region
+      const selectedPointIndices: number[] = [];
+
+      data.coordinates.forEach((coord, idx) => {
+        // Use deck.gl's project method for accurate screen coordinate conversion
+        const screenPoint = viewport.project([coord[0], coord[1], 0]);
+
+        // Check if point is in region
+        let isInside = false;
+        if (region.type === 'box') {
+          isInside = isPointInBox([screenPoint[0], screenPoint[1]], region);
+        } else if (region.type === 'lasso') {
+          isInside = isPointInPolygon([screenPoint[0], screenPoint[1]], region.points);
+        }
+
+        if (isInside) {
+          selectedPointIndices.push(idx);
+        }
+      });
+
+      // Determine selection mode based on modifier keys
+      const mode = modifierKey === 'shift' ? 'add' : modifierKey === 'alt' ? 'remove' : 'replace';
+      selectByRegion(selectedPointIndices, mode);
+    },
+    [data.coordinates, viewState, width, height, isFullscreen, modifierKey, selectByRegion]
   );
 
   // Create layer
@@ -266,10 +324,47 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
     }
   }, []);
 
+  // Track modifier keys
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey) {
+        setModifierKey('shift');
+      } else if (e.altKey) {
+        setModifierKey('alt');
+      }
+    };
+
+    const handleKeyUp = () => {
+      setModifierKey(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'f' || e.key === 'F') {
+      // Mode shortcuts
+      if (e.key === 'b' || e.key === 'B') {
+        setInteractionMode('box');
+      } else if (e.key === 'l' || e.key === 'L') {
+        setInteractionMode('lasso');
+      } else if (e.key === 's' || e.key === 'S') {
+        setInteractionMode('select');
+      } else if (e.key === 'p' || e.key === 'P') {
+        setInteractionMode('pan');
+      }
+      // Selection shortcuts
+      else if (e.key === 'c' || e.key === 'C') {
+        clearSelection();
+      }
+      // Other shortcuts
+      else if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
       } else if (e.key === '+' || e.key === '=') {
         handleZoomIn();
@@ -284,10 +379,13 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleFullscreen, handleZoomIn, handleZoomOut, handleResetView, isFullscreen]);
+  }, [toggleFullscreen, handleZoomIn, handleZoomOut, handleResetView, isFullscreen, clearSelection]);
 
   const currentWidth = isFullscreen ? '100vw' : width;
   const currentHeight = isFullscreen ? '100vh' : height;
+
+  const currentWidthNum = isFullscreen ? window.innerWidth : width;
+  const currentHeightNum = isFullscreen ? window.innerHeight : height;
 
   return (
     <div
@@ -331,21 +429,63 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
         }}
       />
 
+      {/* Selection Overlay for box/lasso modes */}
+      {(interactionMode === 'box' || interactionMode === 'lasso') && (
+        <SelectionOverlay
+          mode={interactionMode}
+          width={currentWidthNum}
+          height={currentHeightNum}
+          onSelectionComplete={handleRegionSelection}
+          modifierKey={modifierKey}
+        />
+      )}
+
       {/* Toolbar */}
       <div className="absolute top-4 right-4 flex flex-col gap-1 bg-black/70 rounded-lg p-1 z-10">
-        {/* Interaction mode toggle */}
+        {/* Point selection mode */}
         <button
-          onClick={() => setInteractionMode(interactionMode === 'select' ? 'pan' : 'select')}
+          onClick={() => setInteractionMode('select')}
           className={`p-2 rounded transition-colors ${
             interactionMode === 'select' ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/10'
           }`}
-          title={interactionMode === 'select' ? 'Select mode (click to pan)' : 'Pan mode (click to select)'}
+          title="Point selection (S)"
         >
-          {interactionMode === 'select' ? (
-            <MousePointer2 className="w-4 h-4" />
-          ) : (
-            <Hand className="w-4 h-4" />
-          )}
+          <MousePointer2 className="w-4 h-4" />
+        </button>
+
+        {/* Pan mode */}
+        <button
+          onClick={() => setInteractionMode('pan')}
+          className={`p-2 rounded transition-colors ${
+            interactionMode === 'pan' ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/10'
+          }`}
+          title="Pan mode (P)"
+        >
+          <Hand className="w-4 h-4" />
+        </button>
+
+        <div className="border-t border-white/20 my-1" />
+
+        {/* Box selection mode */}
+        <button
+          onClick={() => setInteractionMode('box')}
+          className={`p-2 rounded transition-colors ${
+            interactionMode === 'box' ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/10'
+          }`}
+          title="Box selection (B)"
+        >
+          <Square className="w-4 h-4" />
+        </button>
+
+        {/* Lasso selection mode */}
+        <button
+          onClick={() => setInteractionMode('lasso')}
+          className={`p-2 rounded transition-colors ${
+            interactionMode === 'lasso' ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-white/10'
+          }`}
+          title="Lasso selection (L)"
+        >
+          <Lasso className="w-4 h-4" />
         </button>
 
         <div className="border-t border-white/20 my-1" />
@@ -428,10 +568,18 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
       {/* Stats overlay */}
       <div className="absolute bottom-4 left-4 bg-black/70 text-white text-sm px-3 py-2 rounded flex items-center gap-4 z-10">
         <span>
-          {showSelectedOnly
+          {metadataFilters.length > 0 || showSelectedOnly
             ? `Showing ${points.length.toLocaleString()} of ${data.n_episodes.toLocaleString()}`
             : `${data.n_episodes.toLocaleString()} episodes`}
         </span>
+        {metadataFilters.length > 0 && (
+          <>
+            <span className="text-gray-400">|</span>
+            <span className="text-blue-400">
+              {metadataFilters.length} filter{metadataFilters.length !== 1 ? 's' : ''} active
+            </span>
+          </>
+        )}
         {selectedIndices.size > 0 && (
           <>
             <span className="text-gray-400">|</span>
@@ -442,10 +590,15 @@ export function ScatterPlot({ data, width = 800, height = 600 }: ScatterPlotProp
         )}
       </div>
 
-      {/* Keyboard shortcuts hint (shown briefly on fullscreen) */}
+      {/* Keyboard shortcuts hint */}
       {isFullscreen && (
-        <div className="absolute bottom-4 right-4 bg-black/70 text-gray-400 text-xs px-3 py-2 rounded">
-          <span className="text-gray-500">Shortcuts:</span> F fullscreen • +/- zoom • R reset • Esc exit
+        <div className="absolute bottom-4 right-4 bg-black/70 text-gray-400 text-xs px-3 py-2 rounded max-w-xs">
+          <div className="text-gray-500 font-medium mb-1">Shortcuts:</div>
+          <div className="space-y-0.5">
+            <div>S select • P pan • B box • L lasso</div>
+            <div>Shift add • Alt remove • C clear</div>
+            <div>F fullscreen • +/- zoom • R reset</div>
+          </div>
         </div>
       )}
     </div>

@@ -8,6 +8,7 @@ import type {
   Selection,
   ColorScheme,
 } from '../types';
+import type { MetadataFilter } from '../utils/filtering';
 
 interface ProjectState {
   // Current project
@@ -27,6 +28,7 @@ interface ProjectState {
   selectAll: () => void;
   clearSelection: () => void;
   selectIndices: (indices: number[]) => void;
+  selectByRegion: (indices: number[], mode: 'replace' | 'add' | 'remove') => void;
 
   // Sampling results
   lastSamplingResult: SamplingResponse | null;
@@ -39,6 +41,13 @@ interface ProjectState {
   setColorBy: (scheme: ColorScheme) => void;
   showSelectedOnly: boolean;
   setShowSelectedOnly: (show: boolean) => void;
+
+  // Metadata filters
+  metadataFilters: MetadataFilter[];
+  addMetadataFilter: (filter: MetadataFilter) => void;
+  removeMetadataFilter: (index: number) => void;
+  clearMetadataFilters: () => void;
+  setMetadataFilters: (filters: MetadataFilter[]) => void;
 
   // UI state
   isUploading: boolean;
@@ -61,6 +70,7 @@ const initialState = {
   savedSelections: [],
   colorBy: 'none' as ColorScheme,
   showSelectedOnly: false,
+  metadataFilters: [] as MetadataFilter[],
   isUploading: false,
   uploadProgress: 0,
   error: null,
@@ -99,6 +109,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   selectIndices: (indices) => set({ selectedIndices: new Set(indices) }),
 
+  selectByRegion: (indices, mode) => {
+    const current = get().selectedIndices;
+    let newSet: Set<number>;
+
+    if (mode === 'replace') {
+      newSet = new Set(indices);
+    } else if (mode === 'add') {
+      newSet = new Set(current);
+      indices.forEach((idx) => newSet.add(idx));
+    } else {
+      // mode === 'remove'
+      newSet = new Set(current);
+      indices.forEach((idx) => newSet.delete(idx));
+    }
+
+    set({ selectedIndices: newSet });
+  },
+
   setLastSamplingResult: (result) => {
     set({ lastSamplingResult: result });
     if (result) {
@@ -110,6 +138,20 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   setColorBy: (scheme) => set({ colorBy: scheme }),
   setShowSelectedOnly: (show) => set({ showSelectedOnly: show }),
+
+  addMetadataFilter: (filter) => {
+    const current = get().metadataFilters;
+    set({ metadataFilters: [...current, filter] });
+  },
+
+  removeMetadataFilter: (index) => {
+    const current = get().metadataFilters;
+    set({ metadataFilters: current.filter((_, i) => i !== index) });
+  },
+
+  clearMetadataFilters: () => set({ metadataFilters: [] }),
+
+  setMetadataFilters: (filters) => set({ metadataFilters: filters }),
 
   setIsUploading: (uploading) => set({ isUploading: uploading }),
   setUploadProgress: (progress) => set({ uploadProgress: progress }),

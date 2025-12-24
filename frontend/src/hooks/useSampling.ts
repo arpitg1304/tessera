@@ -33,19 +33,40 @@ export function useExport(projectId: string | undefined) {
       if (!projectId) throw new Error('No project ID');
       const blob = await apiExportSelection(projectId, request);
 
-      // Trigger download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      // Parse JSON to extract code snippet BEFORE consuming the blob
+      let codeSnippet = null;
+      let exportData = null;
+      if (request.format === 'json') {
+        const text = await blob.text();
+        const data = JSON.parse(text);
+        codeSnippet = data.code_snippet;
+        exportData = data;
 
-      const extension = request.format === 'csv' ? 'csv' : 'json';
-      a.download = `tessera_export_${projectId}.${extension}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
+        // Create a new blob for download since we consumed the original
+        const newBlob = new Blob([text], { type: 'application/json' });
 
-      return blob;
+        // Trigger download
+        const url = window.URL.createObjectURL(newBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tessera_export_${projectId}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } else {
+        // CSV format - just download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tessera_export_${projectId}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      }
+
+      return { blob, codeSnippet, exportData };
     },
   });
 }
