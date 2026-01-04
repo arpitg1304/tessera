@@ -1,7 +1,7 @@
 // Selection statistics panel component
 
-import { useMemo } from 'react';
-import { BarChart3 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
 import { computeSelectionStats } from '../utils/statistics';
 import type { VisualizationData } from '../types';
 
@@ -11,6 +11,8 @@ interface SelectionStatsProps {
 }
 
 export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   const stats = useMemo(() => {
     return computeSelectionStats(data.metadata, selectedIndices);
   }, [data.metadata, selectedIndices]);
@@ -20,20 +22,35 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 space-y-4">
-      {/* Header */}
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <BarChart3 className="w-5 h-5" />
-        Selection Stats
-      </h3>
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
+      {/* Collapsible Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between hover:opacity-70 transition-opacity"
+      >
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <BarChart3 className="w-5 h-5" />
+          Selection Stats
+          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+            ({selectedIndices.size.toLocaleString()})
+          </span>
+        </h3>
+        {isExpanded ? (
+          <ChevronDown className="w-5 h-5 text-gray-500" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-gray-500" />
+        )}
+      </button>
 
-      {/* Episode count */}
-      <div className="text-sm text-gray-600 dark:text-gray-300">
-        {selectedIndices.size.toLocaleString()} episode{selectedIndices.size !== 1 ? 's' : ''} selected
-      </div>
+      {isExpanded && (
+        <div className="mt-4 space-y-4">
+          {/* Episode count */}
+          <div className="text-sm text-gray-600 dark:text-gray-300">
+            {selectedIndices.size.toLocaleString()} episode{selectedIndices.size !== 1 ? 's' : ''} selected
+          </div>
 
-      {/* Statistics by field */}
-      <div className="space-y-4">
+          {/* Statistics by field */}
+          <div className="space-y-4">
         {stats.map((fieldStat) => (
           <div key={fieldStat.field} className="border-t pt-3">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2 capitalize">
@@ -108,7 +125,9 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
             )}
           </div>
         ))}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

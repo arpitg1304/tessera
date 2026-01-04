@@ -14,7 +14,7 @@ class Config:
     MAX_EMBEDDING_DIM: int = 2048
 
     # Rate limits
-    MAX_UPLOADS_PER_IP_PER_DAY: int = 5
+    MAX_UPLOADS_PER_IP_PER_DAY: int = 20
     MAX_UPLOADS_PER_IP_PER_HOUR: int = 2
 
     # Storage

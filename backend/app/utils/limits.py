@@ -51,20 +51,51 @@ def get_disk_usage_percent() -> float:
         return 0.0
 
 
+def get_tessera_storage_size() -> float:
+    """
+    Calculate total size of Tessera storage directory in bytes.
+
+    Returns:
+        Size in bytes
+    """
+    total_size = 0
+    try:
+        storage_path = Path(config.STORAGE_PATH)
+        if storage_path.exists():
+            for item in storage_path.rglob('*'):
+                if item.is_file():
+                    total_size += item.stat().st_size
+    except Exception:
+        pass
+    return total_size
+
+
 def get_storage_stats() -> dict:
     """
-    Get detailed storage statistics.
+    Get detailed storage statistics for Tessera data only.
 
     Returns:
         Dictionary with storage stats
     """
     try:
-        total, used, free = shutil.disk_usage(config.STORAGE_PATH)
+        # Get actual Tessera storage usage
+        used_bytes = get_tessera_storage_size()
+        used_gb = used_bytes / (1024 ** 3)
+
+        # Get available space on the partition
+        total, _, free = shutil.disk_usage(config.STORAGE_PATH)
+        total_gb = total / (1024 ** 3)
+        free_gb = free / (1024 ** 3)
+
+        # Calculate usage percentage relative to total partition
+        usage_percent = (used_bytes / total) * 100 if total > 0 else 0
+
         return {
-            "total_gb": total / (1024 ** 3),
-            "used_gb": used / (1024 ** 3),
-            "free_gb": free / (1024 ** 3),
-            "usage_percent": (used / total) * 100
+            "total_gb": total_gb,  # Total partition size (for context)
+            "used_gb": used_gb,    # Actual Tessera storage used
+            "free_gb": free_gb,    # Available on partition
+            "available_gb": free_gb,  # Alias for consistency
+            "usage_percent": usage_percent  # Tessera usage relative to partition
         }
     except Exception as e:
         return {"error": str(e)}

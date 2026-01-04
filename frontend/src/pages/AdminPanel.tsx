@@ -326,7 +326,16 @@ export default function AdminPanel() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {dashboard.projects.map((project) => (
                   <tr key={project.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 text-sm font-mono text-gray-900 dark:text-white">{project.id}</td>
+                    <td className="px-6 py-4 text-sm font-mono">
+                      <a
+                        href={`/project/${project.id}`}
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {project.id}
+                      </a>
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                       {project.dataset_name || <span className="text-gray-400 italic">Unnamed</span>}
                     </td>

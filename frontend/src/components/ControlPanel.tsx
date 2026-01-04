@@ -43,6 +43,7 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
   const [clusteringExpanded, setClusteringExpanded] = useState(true);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [metadataExpanded, setMetadataExpanded] = useState(false);
+  const [selectionExpanded, setSelectionExpanded] = useState(true);
 
   // Handle clustering
   const handleCluster = (method: 'kmeans' | 'dbscan') => {
@@ -331,27 +332,48 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
       </div>
 
       {/* Selection controls */}
-      <div className="border-t pt-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          {selectedIndices.size > 0
-            ? `${selectedIndices.size.toLocaleString()} episodes selected`
-            : 'No episodes selected'}
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={selectAll}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            Select All
-          </button>
-          <button
-            onClick={clearSelection}
-            disabled={selectedIndices.size === 0}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Clear
-          </button>
-        </div>
+      <div className="border-t pt-3">
+        <button
+          onClick={() => setSelectionExpanded(!selectionExpanded)}
+          className="flex items-center justify-between w-full mb-3 hover:opacity-70 transition-opacity"
+        >
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-700 dark:text-gray-200" />
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Selection {selectedIndices.size > 0 && `(${selectedIndices.size.toLocaleString()})`}
+            </h4>
+          </div>
+          {selectionExpanded ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+        </button>
+
+        {selectionExpanded && (
+          <div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              {selectedIndices.size > 0
+                ? `${selectedIndices.size.toLocaleString()} episodes selected`
+                : 'No episodes selected'}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={selectAll}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Select All
+              </button>
+              <button
+                onClick={clearSelection}
+                disabled={selectedIndices.size === 0}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Metadata summary */}

@@ -79,7 +79,24 @@ embeddings.h5
 
 See [docs/embedding_format.md](docs/embedding_format.md) for full specification.
 
-## Example: Generate Embeddings
+## Generating Embeddings
+
+### Quick Start: LeRobot Datasets
+
+For LeRobot datasets from HuggingFace, use the included script:
+
+```bash
+# One command to download, generate embeddings, and upload
+examples/scripts/generate-embeddings-from-hf.sh arpitg1304/eval_smolvla_stack_lego
+```
+
+See [EMBEDDINGS_README.md](EMBEDDINGS_README.md) for full documentation on:
+- Generating CLIP embeddings from LeRobot datasets
+- Different embedding modes (single frame, average, start+end)
+- Custom video keys and camera views
+- Batch processing multiple datasets
+
+### Custom Embeddings
 
 ```python
 import numpy as np
@@ -99,89 +116,6 @@ with h5py.File('embeddings.h5', 'w') as f:
 ```
 
 More examples in [examples/](examples/).
-
-## LeRobot Dataset Embeddings
-
-Tessera includes scripts to generate CLIP embeddings from [LeRobot](https://github.com/huggingface/lerobot) datasets.
-
-### Installation
-
-```bash
-pip install torch git+https://github.com/openai/CLIP.git pillow av h5py numpy
-```
-
-For GPU acceleration, ensure PyTorch is installed with CUDA support.
-
-### From Local Cache
-
-If you have a LeRobot dataset cached locally (e.g., downloaded via `huggingface-cli`):
-
-```bash
-python examples/generate_lerobot_embeddings.py /path/to/dataset
-```
-
-### From HuggingFace Hub
-
-To download and process a dataset from the HuggingFace Hub:
-
-```bash
-pip install lerobot
-python examples/lerobot_example.py lerobot/pusht
-```
-
-### Embedding Modes
-
-The `generate_lerobot_embeddings.py` script supports three embedding modes:
-
-| Mode | Output Dim | Description |
-|------|------------|-------------|
-| `single` | 512 | Use one frame (start, middle, or end) |
-| `average` | 512 | Average embeddings from N evenly-spaced frames |
-| `start_end` | 1024 | Concatenate start and end frame embeddings |
-
-**Single frame (default):**
-```bash
-python examples/generate_lerobot_embeddings.py /path/to/dataset --mode single --frame middle
-```
-
-**Multi-frame average:**
-```bash
-python examples/generate_lerobot_embeddings.py /path/to/dataset --mode average --num-frames 5
-```
-
-**Start + end concatenation (recommended for task progression):**
-```bash
-python examples/generate_lerobot_embeddings.py /path/to/dataset --mode start_end
-```
-
-### GPU Support
-
-Both scripts automatically detect and use CUDA if available. Force a specific device with:
-
-```bash
-python examples/generate_lerobot_embeddings.py /path/to/dataset --device cuda
-python examples/generate_lerobot_embeddings.py /path/to/dataset --device cpu
-```
-
-### Full Options
-
-```bash
-python examples/generate_lerobot_embeddings.py --help
-
-Options:
-  -o, --output         Output file path (default: {dataset}_embeddings.h5)
-  --mode               Embedding mode: single, average, start_end
-  --frame              Frame position for single mode: start, middle, end
-  --num-frames         Number of frames for average mode (default: 5)
-  --video-key          Camera view to use (default: observation.images.front)
-  --device             Device: cuda or cpu (default: auto-detect)
-```
-
-### Choosing an Embedding Mode
-
-- **single (middle)**: Fast, good for simple tasks where middle frame is representative
-- **average**: Captures more of the episode, better for varied scenes
-- **start_end**: Best for tasks where progression matters (e.g., pick-and-place, assembly) - the 1024-dim embedding captures both initial and final states
 
 ## CLI Usage
 
