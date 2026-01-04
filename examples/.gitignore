@@ -1,0 +1,22 @@
+# Ignore generated HDF5 files except sample data
+*.h5
+!sample_data/*.h5
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Ignore virtual environments
+venv/
+env/
+ENV/
+
+# Ignore output files from scripts
+output/
+results/
+*.log
+
+# Allow sample data to be tracked
+!sample_data/

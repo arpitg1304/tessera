@@ -1,12 +1,37 @@
 # Tessera Examples
 
-This directory contains example scripts for generating embeddings in Tessera format.
+This directory contains example scripts, sample data, and utilities for generating embeddings in Tessera format.
+
+## Directory Structure
+
+```
+examples/
+├── README.md              # This file
+├── DATASETS.md           # Information about available robotics datasets
+├── scripts/              # Scripts for generating embeddings
+│   ├── simple_clip_example.py          # Quick test with dummy data
+│   ├── generate_large_embeddings.py    # Configurable synthetic datasets
+│   ├── generate_lerobot_embeddings.py  # Advanced LeRobot processing (used by Docker)
+│   ├── generate-embeddings-from-hf.sh  # End-to-end HuggingFace workflow
+│   ├── run-embeddings.sh               # Helper for local datasets
+│   ├── merge_embeddings.py             # Combine multiple HDF5 files
+│   └── format_spec_example.py          # Format specification reference
+├── sample_data/          # Pre-generated HDF5 files for testing
+│   ├── stack_lego_embeddings.h5
+│   ├── stack_lego_start_end_embeddings.h5
+│   ├── combined_stack_lego_place_cylinder.h5
+│   ├── large_dataset_embeddings.h5
+│   └── huge_dataset_10k.h5
+└── docker/               # Docker utilities
+    └── Dockerfile.embeddings
+```
 
 ## Quick Start
 
 ### 1. Generate Dummy Embeddings (Test File)
 
 ```bash
+cd scripts
 python simple_clip_example.py
 # Creates: dummy_embeddings.h5
 ```
@@ -15,18 +40,61 @@ This creates a test file with random embeddings. Use this to verify Tessera is w
 
 ### 2. LeRobot Dataset Embeddings
 
-```bash
-# Install dependencies
-pip install lerobot torch clip-by-openai pillow h5py numpy
+**Easy way - from HuggingFace dataset:**
 
-# Generate embeddings
-python lerobot_example.py lerobot/pusht
-# Creates: lerobot_pusht_embeddings.h5
+```bash
+# From project root (not inside examples/)
+examples/scripts/generate-embeddings-from-hf.sh lerobot/pusht
+
+# This will:
+# 1. Download the dataset from HuggingFace
+# 2. Generate CLIP embeddings using Docker
+# 3. Upload to Tessera and give you the URL
 ```
 
-### 3. Format Specification Reference
+See [EMBEDDINGS_README.md](../EMBEDDINGS_README.md) for full documentation on embedding generation options (modes, camera views, etc.).
+
+### 3. Large Synthetic Dataset (Configurable)
 
 ```bash
+cd scripts
+
+# Default: 1000 episodes, 512D embeddings
+python generate_large_embeddings.py
+# Creates: large_dataset_embeddings.h5 (1.87 MB)
+
+# Custom size: 10k episodes
+python generate_large_embeddings.py -n 10000 -o huge_dataset_10k.h5
+# Creates: huge_dataset_10k.h5 (18.54 MB)
+
+# Full options:
+python generate_large_embeddings.py --help
+# -n, --episodes: Number of episodes (default: 1000)
+# -d, --dim: Embedding dimension (default: 512)
+# -o, --output: Output file path
+# -s, --seed: Random seed for reproducibility (default: 42)
+```
+
+This generates realistic synthetic datasets with structured clusters across 5 different tasks. Perfect for testing:
+- Performance with larger datasets (1k, 10k, 100k episodes)
+- Similarity search functionality
+- Cluster visualization and navigation
+- Metadata filtering
+- Zoom and interaction performance
+
+### 4. Use Pre-Generated Sample Data
+
+```bash
+# Sample files are ready to use in sample_data/
+ls -lh sample_data/*.h5
+
+# Upload any of them directly to Tessera
+```
+
+### 5. Format Specification Reference
+
+```bash
+cd scripts
 python format_spec_example.py
 # Creates: format_example.h5 with documented structure
 ```
