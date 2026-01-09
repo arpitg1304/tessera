@@ -17,5 +17,9 @@ output/
 results/
 *.log
 
-# Ignore sample data (embedding research - hidden for now)
+# Ignore sample data except curated examples
 sample_data/
+!sample_data/pusht_embeddings.h5
+!sample_data/droid_100_embeddings.h5
+!sample_data/aloha_sim_embeddings.h5
+!sample_data/test_1k_embeddings.h5
