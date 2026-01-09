@@ -76,6 +76,7 @@ class SamplingRequest(BaseModel):
     stratify_by: Optional[str] = None  # Required for stratified sampling
     random_seed: int = 42
     selection_name: Optional[str] = None
+    filter_indices: Optional[list[int]] = None  # If provided, sample only from these indices
 
 
 class SamplingResponse(BaseModel):

@@ -43,6 +43,7 @@ export interface SamplingRequest {
   stratify_by?: string;
   random_seed?: number;
   selection_name?: string;
+  filter_indices?: number[];  // If provided, sample only from these indices
 }
 
 export interface SamplingResponse {

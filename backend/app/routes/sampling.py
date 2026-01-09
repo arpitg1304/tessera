@@ -3,6 +3,7 @@ Sampling endpoints for episode selection.
 """
 from fastapi import APIRouter, HTTPException
 from typing import Optional
+import numpy as np
 
 from ..database import db
 from ..models import SamplingRequest, SamplingResponse
@@ -33,13 +34,6 @@ async def sample_episodes_endpoint(
     if embeddings_path is None:
         raise HTTPException(status_code=404, detail="Embeddings file not found")
 
-    # Validate n_samples
-    if request.n_samples > project.n_episodes:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cannot sample {request.n_samples} episodes from {project.n_episodes} total"
-        )
-
     # Load embeddings
     try:
         embeddings = load_embeddings(embeddings_path)
@@ -47,6 +41,32 @@ async def sample_episodes_endpoint(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to load embeddings: {str(e)}"
+        )
+
+    # Handle filter_indices - if provided, we sample only from these indices
+    filter_indices = None
+    index_mapping = None  # Maps filtered index back to original index
+    if request.filter_indices is not None and len(request.filter_indices) > 0:
+        filter_indices = np.array(request.filter_indices)
+        # Validate indices are within bounds
+        if np.any(filter_indices < 0) or np.any(filter_indices >= project.n_episodes):
+            raise HTTPException(
+                status_code=400,
+                detail=f"filter_indices must be between 0 and {project.n_episodes - 1}"
+            )
+        available_count = len(filter_indices)
+        # Store mapping from filtered space to original space
+        index_mapping = filter_indices
+        # Filter embeddings to only include filtered indices
+        embeddings = embeddings[filter_indices]
+    else:
+        available_count = project.n_episodes
+
+    # Validate n_samples against available episodes (filtered or total)
+    if request.n_samples > available_count:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot sample {request.n_samples} episodes from {available_count} available"
         )
 
     # Load metadata if needed for stratified sampling
@@ -72,7 +92,14 @@ async def sample_episodes_endpoint(
                 detail=f"Field '{request.stratify_by}' not found. Available: {available}"
             )
 
-    # Perform sampling
+        # Filter metadata to match filtered embeddings
+        if index_mapping is not None:
+            metadata = {
+                key: [values[i] for i in index_mapping]
+                for key, values in metadata.items()
+            }
+
+    # Perform sampling (on filtered embeddings if filter_indices provided)
     try:
         selected_indices, coverage_score = sample_episodes(
             embeddings=embeddings,
@@ -89,6 +116,10 @@ async def sample_episodes_endpoint(
             status_code=500,
             detail=f"Sampling failed: {str(e)}"
         )
+
+    # Map selected indices back to original indices if we filtered
+    if index_mapping is not None:
+        selected_indices = index_mapping[selected_indices]
 
     # Get episode IDs for selected indices
     try:

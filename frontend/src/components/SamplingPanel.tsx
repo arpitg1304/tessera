@@ -1,9 +1,10 @@
 // Sampling strategy panel
 
-import { useState } from 'react';
-import { Shuffle, Target, BarChart3, Loader2, Grid3x3, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Shuffle, Target, BarChart3, Loader2, Grid3x3, ChevronDown, ChevronRight, Filter } from 'lucide-react';
 import { useProjectStore } from '../stores/projectStore';
 import { useSampling } from '../hooks/useSampling';
+import { applyFilters } from '../utils/filtering';
 import type { VisualizationData } from '../types';
 
 interface SamplingPanelProps {
@@ -45,8 +46,21 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
   const [selectionName, setSelectionName] = useState('');
   const [resultsExpanded, setResultsExpanded] = useState(false);
 
-  const { lastSamplingResult, clusterLabels, clusterMetadata, setLastSamplingResult, selectIndices } = useProjectStore();
+  const { lastSamplingResult, clusterLabels, clusterMetadata, metadataFilters, setLastSamplingResult, selectIndices } = useProjectStore();
   const samplingMutation = useSampling(projectId);
+
+  // Compute filtered indices based on active metadata filters
+  const filteredIndices = useMemo(() => {
+    if (metadataFilters.length === 0) {
+      return null; // No filtering, sample from all
+    }
+    const passedIndices = applyFilters(data.metadata, metadataFilters, data.n_episodes);
+    return passedIndices.size > 0 ? Array.from(passedIndices) : null;
+  }, [data.metadata, data.n_episodes, metadataFilters]);
+
+  // Available episodes count (filtered or total)
+  const availableCount = filteredIndices ? filteredIndices.length : data.n_episodes;
+  const hasActiveFilters = metadataFilters.length > 0;
 
   // Client-side cluster sampling
   const handleClusterSampling = () => {
@@ -104,11 +118,13 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
     }
 
     // Server-side sampling for other strategies
+    // Pass filtered indices if active filters exist
     samplingMutation.mutate({
       strategy,
       n_samples: nSamples,
       stratify_by: strategy === 'stratified' ? stratifyBy : undefined,
       selection_name: selectionName || undefined,
+      filter_indices: filteredIndices || undefined,
     });
   };
 
@@ -168,6 +184,16 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
         </div>
       )}
 
+      {/* Filter indicator */}
+      {hasActiveFilters && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <Filter className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-sm text-blue-700 dark:text-blue-300">
+            Sampling from {availableCount.toLocaleString()} filtered episodes
+          </span>
+        </div>
+      )}
+
       {/* Number of samples */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
@@ -176,15 +202,15 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
         <input
           type="range"
           min={1}
-          max={data.n_episodes}
-          step={data.n_episodes > 100 ? Math.max(1, Math.floor(data.n_episodes / 100)) : 1}
-          value={nSamples}
+          max={availableCount}
+          step={availableCount > 100 ? Math.max(1, Math.floor(availableCount / 100)) : 1}
+          value={Math.min(nSamples, availableCount)}
           onChange={(e) => setNSamples(parseInt(e.target.value))}
           className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
         />
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
           <span>1</span>
-          <span>{data.n_episodes.toLocaleString()}</span>
+          <span>{availableCount.toLocaleString()}{hasActiveFilters ? ' (filtered)' : ''}</span>
         </div>
       </div>
 
