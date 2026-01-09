@@ -89,7 +89,7 @@ export function CodeSnippetModal({ isOpen, onClose, code, episodeCount }: CodeSn
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -101,7 +101,7 @@ export function CodeSnippetModal({ isOpen, onClose, code, episodeCount }: CodeSn
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200">Python Code Snippet</h3>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
             >
               {copied ? (
                 <>

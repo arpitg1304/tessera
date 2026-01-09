@@ -18,6 +18,14 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+@router.get("/examples/list", response_model=list[ProjectResponse])
+async def get_example_projects():
+    """
+    Get all example projects for the homepage.
+    """
+    return db.get_example_projects()
+
+
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def get_project(project_id: str):
     """

@@ -58,6 +58,7 @@ class ProjectInfo(BaseModel):
     has_success_labels: bool
     has_task_labels: bool
     has_episode_length: bool
+    is_example: bool = False
 
 
 class RateLimitInfo(BaseModel):
@@ -108,7 +109,7 @@ async def get_admin_dashboard(admin: str = Depends(verify_admin)):
             cursor.execute("""
                 SELECT id, dataset_name, description, n_episodes, embedding_dim,
                        created_at, expires_at, has_success_labels, has_task_labels,
-                       has_episode_length
+                       has_episode_length, is_example
                 FROM projects
                 ORDER BY created_at DESC
             """)
@@ -134,7 +135,8 @@ async def get_admin_dashboard(admin: str = Depends(verify_admin)):
                     storage_mb=storage_mb,
                     has_success_labels=bool(row["has_success_labels"]),
                     has_task_labels=bool(row["has_task_labels"]),
-                    has_episode_length=bool(row["has_episode_length"])
+                    has_episode_length=bool(row["has_episode_length"]),
+                    is_example=bool(row["is_example"]) if row["is_example"] is not None else False
                 ))
 
                 total_episodes += row["n_episodes"]
@@ -255,3 +257,105 @@ async def get_system_config(admin: str = Depends(verify_admin)):
         "database_path": str(config.DATABASE_PATH),
         "uploads_per_day_limit": config.UPLOADS_PER_DAY_LIMIT
     }
+
+
+class SetExampleRequest(BaseModel):
+    """Request to mark a project as an example."""
+    dataset_name: Optional[str] = None
+    description: Optional[str] = None
+    order: int = 0
+
+
+@router.post("/admin/projects/{project_id}/set-example")
+async def set_project_as_example(
+    project_id: str,
+    request: SetExampleRequest,
+    admin: str = Depends(verify_admin)
+):
+    """
+    Mark a project as a featured example.
+
+    Args:
+        project_id: Project ID to mark as example
+        request: Example metadata
+    """
+    try:
+        from ..database import get_connection
+
+        # Check project exists
+        project = db.get_project(project_id)
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        # Update project with example flag and metadata
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE projects
+                SET is_example = TRUE,
+                    example_order = ?,
+                    expires_at = datetime('9999-12-31'),
+                    dataset_name = COALESCE(?, dataset_name),
+                    description = COALESCE(?, description)
+                WHERE id = ?
+            """, (request.order, request.dataset_name, request.description, project_id))
+            conn.commit()
+
+        logger.info(f"Admin marked project {project_id} as example")
+
+        return {
+            "success": True,
+            "project_id": project_id,
+            "is_example": True
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting project as example: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/admin/projects/{project_id}/unset-example")
+async def unset_project_as_example(
+    project_id: str,
+    admin: str = Depends(verify_admin)
+):
+    """
+    Remove example status from a project.
+    """
+    try:
+        from ..database import get_connection
+        from datetime import timedelta
+
+        project = db.get_project(project_id)
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        # Reset example flag and set normal expiration
+        new_expires = datetime.now() + timedelta(days=config.PROJECT_RETENTION_DAYS)
+
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE projects
+                SET is_example = FALSE,
+                    example_order = 0,
+                    expires_at = ?
+                WHERE id = ?
+            """, (new_expires, project_id))
+            conn.commit()
+
+        logger.info(f"Admin removed example status from project {project_id}")
+
+        return {
+            "success": True,
+            "project_id": project_id,
+            "is_example": False
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error unsetting project as example: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

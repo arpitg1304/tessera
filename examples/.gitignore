@@ -1,6 +1,5 @@
-# Ignore generated HDF5 files except sample data
+# Ignore generated HDF5 files
 *.h5
-!sample_data/*.h5
 
 # Ignore Python cache
 __pycache__/
@@ -18,5 +17,5 @@ output/
 results/
 *.log
 
-# Allow sample data to be tracked
-!sample_data/
+# Ignore sample data (embedding research - hidden for now)
+sample_data/

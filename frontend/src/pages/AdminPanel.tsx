@@ -207,7 +207,6 @@ export default function AdminPanel() {
           </form>
 
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
-            Default: admin / admin123 (change in production!)
           </p>
         </div>
       </div>

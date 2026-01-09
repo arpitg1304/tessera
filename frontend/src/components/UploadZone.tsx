@@ -78,26 +78,28 @@ export function UploadZone({ onUploadSuccess }: UploadZoneProps) {
         <div
           {...getRootProps()}
           className={`
-            border-2 border-dashed rounded-xl p-12 text-center cursor-pointer
+            border-2 border-dashed rounded-xl p-6 text-center cursor-pointer
             transition-all duration-200
             ${isDragActive
-              ? 'border-primary-500 bg-primary-50'
-              : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 hover:bg-gray-50'
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+              : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
             }
           `}
         >
           <input {...getInputProps()} />
-          <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-          {isDragActive ? (
-            <p className="text-lg text-primary-600">Drop your embeddings file here</p>
-          ) : (
-            <>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
-                Drag and drop your <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">.h5</code> file here
-              </p>
-              <p className="text-sm text-gray-400">or click to select a file</p>
-            </>
-          )}
+          <div className="flex items-center justify-center gap-4">
+            <Upload className={`w-8 h-8 ${isDragActive ? 'text-primary-500' : 'text-gray-400'}`} />
+            {isDragActive ? (
+              <p className="text-primary-600 font-medium">Drop your embeddings file here</p>
+            ) : (
+              <div className="text-left">
+                <p className="text-gray-600 dark:text-gray-300">
+                  Drop your <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm">.h5</code> file here or <span className="text-primary-600 font-medium">browse</span>
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">HDF5 format, max 100MB</p>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="border rounded-xl p-6 bg-white dark:bg-gray-900 shadow-sm">

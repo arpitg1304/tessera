@@ -157,7 +157,7 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
           <select
             value={stratifyBy}
             onChange={(e) => setStratifyBy(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500"
           >
             {Object.keys(data.metadata).map((key) => (
               <option key={key} value={key}>
@@ -198,7 +198,7 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
           value={selectionName}
           onChange={(e) => setSelectionName(e.target.value)}
           placeholder="e.g., diverse_10k"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-primary-500"
         />
       </div>
 
@@ -239,11 +239,11 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-1 text-sm">
               <p>
                 <span className="text-gray-600 dark:text-gray-300">Strategy:</span>{' '}
-                <span className="font-medium">{lastSamplingResult.strategy}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{lastSamplingResult.strategy}</span>
               </p>
               <p>
                 <span className="text-gray-600 dark:text-gray-300">Samples:</span>{' '}
-                <span className="font-medium">{lastSamplingResult.n_samples.toLocaleString()}</span>
+                <span className="font-medium text-gray-900 dark:text-white">{lastSamplingResult.n_samples.toLocaleString()}</span>
               </p>
               <p>
                 <span className="text-gray-600 dark:text-gray-300">Coverage:</span>{' '}

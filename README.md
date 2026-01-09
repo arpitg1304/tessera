@@ -20,14 +20,18 @@ Tessera is a web application for visualizing episode embeddings and selecting ma
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tessera.git
+git clone https://github.com/arpitg1304/tessera.git
 cd tessera
+
+# Copy environment file and configure
+cp .env.example .env
+# Edit .env to set ADMIN_PASSWORD for the admin panel
 
 # Start services
 docker-compose up -d
 
 # Open in browser
-open http://localhost
+open http://localhost:8080
 ```
 
 ### Manual Setup
@@ -168,16 +172,16 @@ curl -X POST http://localhost:8000/api/project/{id}/sample \
 
 ## Self-Hosting
 
-See [docs/self_hosting.md](docs/self_hosting.md) for deployment guide.
+See [docs/self_hosting.md](docs/self_hosting.md) for production deployment guide with nginx and SSL.
 
-```bash
-# Production deployment
-docker-compose -f docker-compose.prod.yml up -d
-```
+For basic self-hosting, the default `docker-compose.yml` works out of the box. For production with a custom domain, you'll need to:
+1. Set up nginx as a reverse proxy
+2. Configure SSL certificates (e.g., with Let's Encrypt)
+3. Set a strong `ADMIN_PASSWORD` in your `.env` file
 
 ## Contributing
 
-Contributions welcome! Please open an issue first to discuss changes.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Related Tools
 

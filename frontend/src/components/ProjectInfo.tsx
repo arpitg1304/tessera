@@ -94,17 +94,17 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Available Metadata</p>
           <div className="flex flex-wrap gap-2">
             {project.has_success_labels && (
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+              <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-1 rounded">
                 success
               </span>
             )}
             {project.has_task_labels && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+              <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-1 rounded">
                 task
               </span>
             )}
             {project.has_episode_length && (
-              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+              <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-1 rounded">
                 episode_length
               </span>
             )}

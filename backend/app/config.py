@@ -15,7 +15,7 @@ class Config:
 
     # Rate limits
     MAX_UPLOADS_PER_IP_PER_DAY: int = 20
-    MAX_UPLOADS_PER_IP_PER_HOUR: int = 2
+    MAX_UPLOADS_PER_IP_PER_HOUR: int = 20
 
     # Storage
     MAX_TOTAL_STORAGE_GB: int = 40

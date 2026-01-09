@@ -50,9 +50,11 @@ frontend/dist/
 
 # Data directories (for local development)
 data/
-*.h5
 *.hdf5
 *.npy
+
+# Ignore all .h5 files
+*.h5
 
 # Database
 *.db
@@ -74,3 +76,15 @@ htmlcov/
 
 # Project planning
 ideas.md
+
+# Deployment files (user-specific)
+deploy.sh
+nginx.prod.conf
+docker-compose.prod.yml
+DEPLOYMENT.md
+
+# Scripts directory (user deployment scripts)
+scripts/
+
+# Example sample data (embedding research - hidden for now)
+examples/sample_data/

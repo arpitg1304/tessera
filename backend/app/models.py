@@ -35,6 +35,7 @@ class ProjectResponse(BaseModel):
     description: Optional[str]
     created_at: datetime
     expires_at: datetime
+    is_example: bool = False
 
 
 class UploadResponse(BaseModel):

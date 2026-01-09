@@ -59,7 +59,7 @@ export function ExportModal({ projectId, isOpen, onClose, onExportSuccess }: Exp
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100"
+            className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -89,12 +89,12 @@ export function ExportModal({ projectId, isOpen, onClose, onExportSuccess }: Exp
                 className={`
                   flex items-center gap-2 p-3 rounded-lg border-2 transition-all
                   ${format === 'json'
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                   }
                 `}
               >
-                <FileJson className={`w-5 h-5 ${format === 'json' ? 'text-primary-600' : 'text-gray-400'}`} />
+                <FileJson className={`w-5 h-5 ${format === 'json' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
                 <span className={format === 'json' ? 'text-primary-900 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}>JSON</span>
               </button>
               <button
@@ -102,12 +102,12 @@ export function ExportModal({ projectId, isOpen, onClose, onExportSuccess }: Exp
                 className={`
                   flex items-center gap-2 p-3 rounded-lg border-2 transition-all
                   ${format === 'csv'
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                   }
                 `}
               >
-                <FileSpreadsheet className={`w-5 h-5 ${format === 'csv' ? 'text-primary-600' : 'text-gray-400'}`} />
+                <FileSpreadsheet className={`w-5 h-5 ${format === 'csv' ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`} />
                 <span className={format === 'csv' ? 'text-primary-900 dark:text-primary-300' : 'text-gray-700 dark:text-gray-200'}>CSV</span>
               </button>
             </div>
@@ -120,12 +120,12 @@ export function ExportModal({ projectId, isOpen, onClose, onExportSuccess }: Exp
               onClick={() => setIncludeMetadata(!includeMetadata)}
               className={`
                 relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                ${includeMetadata ? 'bg-primary-600' : 'bg-gray-200'}
+                ${includeMetadata ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-700'}
               `}
             >
               <span
                 className={`
-                  inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-900 transition-transform
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform
                   ${includeMetadata ? 'translate-x-6' : 'translate-x-1'}
                 `}
               />

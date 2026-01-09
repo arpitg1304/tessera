@@ -23,10 +23,13 @@ RUN pip install --no-cache-dir \
     git+https://github.com/openai/CLIP.git \
     av \
     h5py \
-    pillow
+    pillow \
+    pyarrow \
+    pandas
 
 # Copy the scripts (relative to examples/ directory as build context)
 COPY scripts/generate_lerobot_embeddings.py /app/
+COPY scripts/generate_lerobot_embeddings_v3.py /app/
 
 # Copy optional health metrics module (requires pyarrow for full functionality)
 COPY scripts/health_metrics.py /app/

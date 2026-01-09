@@ -38,9 +38,19 @@ def init_db() -> None:
                 has_task_labels BOOLEAN DEFAULT FALSE,
                 has_episode_length BOOLEAN DEFAULT FALSE,
                 dataset_name TEXT,
-                description TEXT
+                description TEXT,
+                is_example BOOLEAN DEFAULT FALSE,
+                example_order INTEGER DEFAULT 0
             )
         """)
+
+        # Add is_example column if it doesn't exist (migration for existing DBs)
+        cursor.execute("PRAGMA table_info(projects)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if 'is_example' not in columns:
+            cursor.execute("ALTER TABLE projects ADD COLUMN is_example BOOLEAN DEFAULT FALSE")
+        if 'example_order' not in columns:
+            cursor.execute("ALTER TABLE projects ADD COLUMN example_order INTEGER DEFAULT 0")
 
         # Create index for cleanup queries
         cursor.execute("""
@@ -128,7 +138,7 @@ class Database:
             cursor.execute("""
                 SELECT id, n_episodes, embedding_dim, has_success_labels,
                        has_task_labels, has_episode_length, dataset_name,
-                       description, created_at, expires_at
+                       description, created_at, expires_at, is_example
                 FROM projects WHERE id = ?
             """, (project_id,))
             row = cursor.fetchone()
@@ -146,7 +156,8 @@ class Database:
                 dataset_name=row["dataset_name"],
                 description=row["description"],
                 created_at=datetime.fromisoformat(row["created_at"]),
-                expires_at=datetime.fromisoformat(row["expires_at"])
+                expires_at=datetime.fromisoformat(row["expires_at"]),
+                is_example=bool(row["is_example"]) if row["is_example"] is not None else False
             )
 
     def get_project_access_token(self, project_id: str) -> Optional[str]:
@@ -180,15 +191,57 @@ class Database:
             return cursor.rowcount > 0
 
     def get_expired_projects(self) -> list[dict]:
-        """Get all expired projects."""
+        """Get all expired projects (excluding examples)."""
         with get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT id, embeddings_path
                 FROM projects
-                WHERE expires_at < ?
+                WHERE expires_at < ? AND (is_example = FALSE OR is_example IS NULL)
             """, (datetime.now(),))
             return [dict(row) for row in cursor.fetchall()]
+
+    def get_example_projects(self) -> list[ProjectResponse]:
+        """Get all example projects ordered by example_order."""
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, n_episodes, embedding_dim, has_success_labels,
+                       has_task_labels, has_episode_length, dataset_name,
+                       description, created_at, expires_at, is_example
+                FROM projects
+                WHERE is_example = TRUE
+                ORDER BY example_order ASC
+            """)
+            return [
+                ProjectResponse(
+                    id=row["id"],
+                    n_episodes=row["n_episodes"],
+                    embedding_dim=row["embedding_dim"],
+                    has_success_labels=bool(row["has_success_labels"]),
+                    has_task_labels=bool(row["has_task_labels"]),
+                    has_episode_length=bool(row["has_episode_length"]),
+                    dataset_name=row["dataset_name"],
+                    description=row["description"],
+                    created_at=datetime.fromisoformat(row["created_at"]),
+                    expires_at=datetime.fromisoformat(row["expires_at"]),
+                    is_example=True
+                )
+                for row in cursor.fetchall()
+            ]
+
+    def set_project_as_example(self, project_id: str, order: int = 0) -> bool:
+        """Mark a project as an example."""
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE projects
+                SET is_example = TRUE, example_order = ?,
+                    expires_at = datetime('9999-12-31')
+                WHERE id = ?
+            """, (order, project_id))
+            conn.commit()
+            return cursor.rowcount > 0
 
     def get_total_projects(self) -> int:
         """Get total number of projects."""

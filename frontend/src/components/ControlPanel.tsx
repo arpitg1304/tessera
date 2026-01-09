@@ -190,8 +190,8 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
           className={`
             p-2 rounded-lg transition-colors
             ${showSelectedOnly
-              ? 'bg-primary-100 text-primary-600'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
             }
           `}
         >
@@ -240,7 +240,7 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
             {metadataFilters.map((filter, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-2 bg-primary-50 text-primary-700 px-2 py-1 rounded text-xs"
+                className="flex items-center gap-2 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-1 rounded text-xs"
               >
                 <span className="flex-1">
                   <strong>{filter.field}</strong> {filter.operator}{' '}
@@ -248,7 +248,7 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
                 </span>
                 <button
                   onClick={() => removeMetadataFilter(idx)}
-                  className="p-0.5 hover:bg-primary-100 rounded"
+                  className="p-0.5 hover:bg-primary-100 dark:hover:bg-primary-800/50 rounded"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -360,14 +360,14 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
             <div className="flex gap-2">
               <button
                 onClick={selectAll}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 Select All
               </button>
               <button
                 onClick={clearSelection}
                 disabled={selectedIndices.size === 0}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Clear
               </button>

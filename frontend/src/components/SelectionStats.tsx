@@ -87,15 +87,15 @@ export function SelectionStats({ data, selectedIndices }: SelectionStatsProps) {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-gray-600 dark:text-gray-300">Min:</span>
-                  <span className="ml-1 font-medium">{fieldStat.min?.toFixed(2)}</span>
+                  <span className="ml-1 font-medium text-gray-900 dark:text-white">{fieldStat.min?.toFixed(2)}</span>
                 </div>
                 <div>
                   <span className="text-gray-600 dark:text-gray-300">Max:</span>
-                  <span className="ml-1 font-medium">{fieldStat.max?.toFixed(2)}</span>
+                  <span className="ml-1 font-medium text-gray-900 dark:text-white">{fieldStat.max?.toFixed(2)}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-gray-600 dark:text-gray-300">Mean:</span>
-                  <span className="ml-1 font-medium">{fieldStat.mean?.toFixed(2)}</span>
+                  <span className="ml-1 font-medium text-gray-900 dark:text-white">{fieldStat.mean?.toFixed(2)}</span>
                 </div>
               </div>
             )}
