@@ -123,6 +123,58 @@ with h5py.File('embeddings.h5', 'a') as f:
     metadata.create_dataset('gripper_state', data=[0.5, 0.3, ...])
 ```
 
+## Why Add Metadata?
+
+Metadata enables **filtered sampling** - the ability to sample diverse episodes from a specific subset of your data. Without metadata, you can only sample from all episodes.
+
+### Use Cases
+
+| Scenario | Metadata Fields | Workflow |
+|----------|-----------------|----------|
+| Train only on successful demonstrations | `success` (bool) | Filter `success=true`, then K-means sample |
+| Balance across tasks | `task` (string) | Use stratified sampling by `task` |
+| Exclude short episodes | `episode_length` (int) | Filter `episode_length > 50`, then sample |
+| Multi-robot dataset | `robot_type` (string) | Filter to specific robot, sample diverse episodes |
+| Sim-to-real transfer | `is_real` (bool) | Filter `is_real=true` for fine-tuning data |
+| Multi-environment training | `environment` (string) | Stratified sample across environments |
+
+### Example: Curating a Training Set
+
+```python
+# Your dataset has 50,000 episodes with mixed success rates
+# Goal: 5,000 diverse successful episodes
+
+# 1. Generate embeddings with metadata
+with h5py.File('embeddings.h5', 'w') as f:
+    f.create_dataset('embeddings', data=embeddings)
+    f.create_dataset('episode_ids', data=episode_ids)
+
+    metadata = f.create_group('metadata')
+    metadata.create_dataset('success', data=success_labels)  # bool array
+    metadata.create_dataset('task', data=task_labels)        # string array
+
+# 2. Upload to Tessera
+
+# 3. In Tessera UI:
+#    - Add filter: success = true (shows 35,000 episodes)
+#    - Select K-means sampling, 5,000 samples
+#    - Click "Generate Sample"
+#    - Export episode IDs
+
+# 4. Use exported IDs in your training script
+```
+
+### Recommended Metadata for Robotics
+
+For robotics datasets, we recommend including:
+
+- **`success`** (bool): Whether the episode achieved its goal
+- **`task`** (string): Task name or category
+- **`episode_length`** (int): Number of timesteps
+- **`robot_type`** (string): Robot model/configuration
+- **`environment`** (string): Simulation environment or real-world setting
+- **`dataset`** (string): Source dataset name (for merged datasets)
+
 ## Validation Rules
 
 Tessera validates uploaded files against these rules:

@@ -75,13 +75,32 @@ Tessera expects HDF5 files with this structure:
 embeddings.h5
 ├── embeddings          # (N, D) float32 array
 ├── episode_ids         # (N,) string array
-└── metadata/           # Optional
+└── metadata/           # Optional but recommended
     ├── success         # (N,) bool
     ├── task            # (N,) string
     └── episode_length  # (N,) int
 ```
 
 See [docs/embedding_format.md](docs/embedding_format.md) for full specification.
+
+### Why Add Metadata?
+
+Metadata unlocks powerful filtering and sampling capabilities:
+
+| Metadata Field | What You Can Do |
+|----------------|-----------------|
+| `success` | Sample diverse episodes *only from successful runs* |
+| `task` | Balance your dataset across different tasks |
+| `episode_length` | Filter out episodes that are too short/long |
+| `robot_type` | Ensure coverage across different robots |
+| `environment` | Sample from specific simulation environments |
+
+**Example workflow:**
+1. Filter to `success=true` episodes
+2. Sample 1,000 diverse episodes using K-means
+3. Export episode IDs for training
+
+Without metadata, you can only sample from all episodes. With metadata, you can curate precisely the subset you need.
 
 ## Generating Embeddings
 
@@ -168,7 +187,7 @@ curl -X POST http://localhost:8000/api/project/{id}/sample \
 | Max episodes | 200,000 |
 | Max embedding dimension | 2,048 |
 | Project retention | 7 days |
-| Uploads per IP per day | 5 |
+| Uploads per IP per day | 20 |
 
 ## Self-Hosting
 
