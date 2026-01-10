@@ -11,6 +11,7 @@ aiofiles==23.2.1
 # Data handling
 h5py==3.10.0
 numpy==1.26.3
+Pillow==10.2.0
 
 # Machine learning
 scikit-learn==1.4.0

@@ -68,31 +68,39 @@ def kmeans_diversity_sampling(
 
 
 def stratified_sampling(
-    embeddings: np.ndarray,
+    embeddings: Optional[np.ndarray],
     metadata: dict,
     n_samples: int,
     stratify_by: str = 'success',
-    random_state: int = 42
+    random_state: int = 42,
+    n_total: Optional[int] = None
 ) -> np.ndarray:
     """
     Select samples maintaining distribution across metadata categories.
 
     Args:
-        embeddings: Input embeddings (used for count reference)
+        embeddings: Input embeddings (used for count reference, optional if n_total provided)
         metadata: Dictionary of metadata fields
         n_samples: Total number of samples to select
         stratify_by: Metadata field to stratify by
         random_state: Random seed for reproducibility
+        n_total: Total number of episodes (required if embeddings is None)
 
     Returns:
         Array of selected indices
     """
-    logger.info(f"Stratified sampling by '{stratify_by}': {n_samples} from {len(embeddings)}")
+    # Get total count from embeddings or n_total parameter
+    if embeddings is not None:
+        n_total = len(embeddings)
+    elif n_total is None:
+        # Fallback: infer from metadata
+        n_total = len(list(metadata.values())[0]) if metadata else 0
+
+    logger.info(f"Stratified sampling by '{stratify_by}': {n_samples} from {n_total}")
 
     if stratify_by not in metadata:
         raise ValueError(f"Metadata field '{stratify_by}' not found")
 
-    n_total = len(embeddings)
     if n_samples >= n_total:
         return np.arange(n_total)
 
@@ -139,24 +147,31 @@ def stratified_sampling(
 
 
 def random_sampling(
-    embeddings: np.ndarray,
+    embeddings: Optional[np.ndarray],
     n_samples: int,
-    random_state: int = 42
+    random_state: int = 42,
+    n_total: Optional[int] = None
 ) -> np.ndarray:
     """
     Random sampling baseline.
 
     Args:
-        embeddings: Input embeddings (used for count)
+        embeddings: Input embeddings (used for count, optional if n_total provided)
         n_samples: Number of samples to select
         random_state: Random seed for reproducibility
+        n_total: Total number of episodes (required if embeddings is None)
 
     Returns:
         Array of selected indices
     """
-    logger.info(f"Random sampling: {n_samples} from {len(embeddings)}")
+    # Get total count from embeddings or n_total parameter
+    if embeddings is not None:
+        n_total = len(embeddings)
+    elif n_total is None:
+        raise ValueError("Either embeddings or n_total must be provided")
 
-    n_total = len(embeddings)
+    logger.info(f"Random sampling: {n_samples} from {n_total}")
+
     if n_samples >= n_total:
         return np.arange(n_total)
 
@@ -165,26 +180,34 @@ def random_sampling(
 
 
 def compute_coverage_score(
-    embeddings: np.ndarray,
+    embeddings: Optional[np.ndarray],
     selected_indices: np.ndarray,
-    percentile: float = 75.0
+    percentile: float = 75.0,
+    n_total: Optional[int] = None
 ) -> float:
     """
     Compute what percentage of the embedding space is covered by selection.
     Uses nearest neighbor distance metric.
 
     Args:
-        embeddings: All embeddings of shape (N, D)
+        embeddings: All embeddings of shape (N, D), or None for metadata-only
         selected_indices: Indices of selected samples
         percentile: Percentile threshold for coverage
+        n_total: Total number of episodes (used when embeddings is None)
 
     Returns:
-        Coverage score between 0 and 1
+        Coverage score between 0 and 1 (or selection ratio if no embeddings)
     """
-    from sklearn.metrics.pairwise import euclidean_distances
-
     if len(selected_indices) == 0:
         return 0.0
+
+    # For metadata-only projects, return simple selection ratio
+    if embeddings is None:
+        if n_total is None or n_total == 0:
+            return 0.0
+        return float(len(selected_indices)) / n_total
+
+    from sklearn.metrics.pairwise import euclidean_distances
 
     if len(selected_indices) >= len(embeddings):
         return 1.0
@@ -211,40 +234,50 @@ def compute_coverage_score(
 
 
 def sample_episodes(
-    embeddings: np.ndarray,
+    embeddings: Optional[np.ndarray],
     n_samples: int,
     strategy: str = "kmeans",
     metadata: Optional[dict] = None,
     stratify_by: Optional[str] = None,
-    random_state: int = 42
+    random_state: int = 42,
+    n_total: Optional[int] = None
 ) -> tuple[np.ndarray, float]:
     """
     Sample episodes using the specified strategy.
 
     Args:
-        embeddings: Input embeddings of shape (N, D)
+        embeddings: Input embeddings of shape (N, D), or None for metadata-only
         n_samples: Number of samples to select
         strategy: Sampling strategy ("kmeans", "stratified", "random")
         metadata: Metadata dictionary (required for stratified)
         stratify_by: Field to stratify by (required for stratified)
         random_state: Random seed
+        n_total: Total episode count (required for metadata-only projects)
 
     Returns:
         Tuple of (selected_indices, coverage_score)
     """
+    # Determine total count
+    if embeddings is not None:
+        n_total = len(embeddings)
+    elif n_total is None and metadata:
+        n_total = len(list(metadata.values())[0])
+
     if strategy == "kmeans":
+        if embeddings is None:
+            raise ValueError("K-means sampling requires embeddings")
         selected = kmeans_diversity_sampling(embeddings, n_samples, random_state)
     elif strategy == "stratified":
         if metadata is None or stratify_by is None:
             raise ValueError("Stratified sampling requires metadata and stratify_by")
         selected = stratified_sampling(
-            embeddings, metadata, n_samples, stratify_by, random_state
+            embeddings, metadata, n_samples, stratify_by, random_state, n_total
         )
     elif strategy == "random":
-        selected = random_sampling(embeddings, n_samples, random_state)
+        selected = random_sampling(embeddings, n_samples, random_state, n_total)
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
 
-    coverage = compute_coverage_score(embeddings, selected)
+    coverage = compute_coverage_score(embeddings, selected, n_total=n_total)
 
     return selected, coverage

@@ -129,7 +129,10 @@ async def upload_embeddings(
         expires_at=expires_at,
         has_success_labels=validation_result.has_success,
         has_task_labels=validation_result.has_task,
-        has_episode_length=validation_result.has_episode_length
+        has_episode_length=validation_result.has_episode_length,
+        has_embeddings=validation_result.has_embeddings,
+        has_thumbnails=validation_result.has_thumbnails,
+        has_gifs=validation_result.has_gifs
     )
 
     try:

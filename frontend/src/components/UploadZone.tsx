@@ -38,6 +38,8 @@ export function UploadZone({ onUploadSuccess }: UploadZoneProps) {
         has_task: false,
         has_episode_length: false,
         has_dataset: false,
+        has_embeddings: false,
+        has_gifs: false,
         metadata_fields: [],
         errors: [error instanceof Error ? error.message : 'Validation failed'],
         warnings: [],

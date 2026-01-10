@@ -37,6 +37,8 @@ def init_db() -> None:
                 has_success_labels BOOLEAN DEFAULT FALSE,
                 has_task_labels BOOLEAN DEFAULT FALSE,
                 has_episode_length BOOLEAN DEFAULT FALSE,
+                has_embeddings BOOLEAN DEFAULT TRUE,
+                has_thumbnails BOOLEAN DEFAULT FALSE,
                 dataset_name TEXT,
                 description TEXT,
                 is_example BOOLEAN DEFAULT FALSE,
@@ -44,13 +46,19 @@ def init_db() -> None:
             )
         """)
 
-        # Add is_example column if it doesn't exist (migration for existing DBs)
+        # Add columns if they don't exist (migration for existing DBs)
         cursor.execute("PRAGMA table_info(projects)")
         columns = [col[1] for col in cursor.fetchall()]
         if 'is_example' not in columns:
             cursor.execute("ALTER TABLE projects ADD COLUMN is_example BOOLEAN DEFAULT FALSE")
         if 'example_order' not in columns:
             cursor.execute("ALTER TABLE projects ADD COLUMN example_order INTEGER DEFAULT 0")
+        if 'has_embeddings' not in columns:
+            cursor.execute("ALTER TABLE projects ADD COLUMN has_embeddings BOOLEAN DEFAULT TRUE")
+        if 'has_thumbnails' not in columns:
+            cursor.execute("ALTER TABLE projects ADD COLUMN has_thumbnails BOOLEAN DEFAULT FALSE")
+        if 'has_gifs' not in columns:
+            cursor.execute("ALTER TABLE projects ADD COLUMN has_gifs BOOLEAN DEFAULT FALSE")
 
         # Create index for cleanup queries
         cursor.execute("""
@@ -113,8 +121,8 @@ class Database:
                 INSERT INTO projects (
                     id, created_at, expires_at, access_token, embeddings_path,
                     n_episodes, embedding_dim, has_success_labels, has_task_labels,
-                    has_episode_length, dataset_name, description
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    has_episode_length, has_embeddings, has_thumbnails, has_gifs, dataset_name, description
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 project.id,
                 datetime.now(),
@@ -126,6 +134,9 @@ class Database:
                 project.has_success_labels,
                 project.has_task_labels,
                 project.has_episode_length,
+                project.has_embeddings,
+                project.has_thumbnails,
+                project.has_gifs,
                 project.dataset_name,
                 project.description
             ))
@@ -137,8 +148,8 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT id, n_episodes, embedding_dim, has_success_labels,
-                       has_task_labels, has_episode_length, dataset_name,
-                       description, created_at, expires_at, is_example
+                       has_task_labels, has_episode_length, has_embeddings, has_thumbnails, has_gifs,
+                       dataset_name, description, created_at, expires_at, is_example
                 FROM projects WHERE id = ?
             """, (project_id,))
             row = cursor.fetchone()
@@ -153,6 +164,9 @@ class Database:
                 has_success_labels=bool(row["has_success_labels"]),
                 has_task_labels=bool(row["has_task_labels"]),
                 has_episode_length=bool(row["has_episode_length"]),
+                has_embeddings=bool(row["has_embeddings"]) if row["has_embeddings"] is not None else True,
+                has_thumbnails=bool(row["has_thumbnails"]) if row["has_thumbnails"] is not None else False,
+                has_gifs=bool(row["has_gifs"]) if row["has_gifs"] is not None else False,
                 dataset_name=row["dataset_name"],
                 description=row["description"],
                 created_at=datetime.fromisoformat(row["created_at"]),
@@ -207,8 +221,8 @@ class Database:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT id, n_episodes, embedding_dim, has_success_labels,
-                       has_task_labels, has_episode_length, dataset_name,
-                       description, created_at, expires_at, is_example
+                       has_task_labels, has_episode_length, has_embeddings, has_thumbnails, has_gifs,
+                       dataset_name, description, created_at, expires_at, is_example
                 FROM projects
                 WHERE is_example = TRUE
                 ORDER BY example_order ASC
@@ -221,6 +235,9 @@ class Database:
                     has_success_labels=bool(row["has_success_labels"]),
                     has_task_labels=bool(row["has_task_labels"]),
                     has_episode_length=bool(row["has_episode_length"]),
+                    has_embeddings=bool(row["has_embeddings"]) if row["has_embeddings"] is not None else True,
+                    has_thumbnails=bool(row["has_thumbnails"]) if row["has_thumbnails"] is not None else False,
+                    has_gifs=bool(row["has_gifs"]) if row["has_gifs"] is not None else False,
                     dataset_name=row["dataset_name"],
                     description=row["description"],
                     created_at=datetime.fromisoformat(row["created_at"]),

@@ -19,6 +19,9 @@ class ProjectCreate(BaseModel):
     has_success_labels: bool = False
     has_task_labels: bool = False
     has_episode_length: bool = False
+    has_embeddings: bool = True  # False for metadata-only projects
+    has_thumbnails: bool = False  # True if thumbnails dataset exists
+    has_gifs: bool = False  # True if animated GIFs dataset exists
     dataset_name: Optional[str] = None
     description: Optional[str] = None
 
@@ -31,6 +34,9 @@ class ProjectResponse(BaseModel):
     has_success_labels: bool
     has_task_labels: bool
     has_episode_length: bool
+    has_embeddings: bool = True  # False for metadata-only projects
+    has_thumbnails: bool = False  # True if thumbnails dataset exists
+    has_gifs: bool = False  # True if animated GIFs dataset exists
     dataset_name: Optional[str]
     description: Optional[str]
     created_at: datetime
@@ -129,6 +135,9 @@ class ValidationResult(BaseModel):
     has_task: bool = False
     has_episode_length: bool = False
     has_dataset: bool = False
+    has_embeddings: bool = True  # False for metadata-only files
+    has_thumbnails: bool = False  # True if thumbnails dataset exists
+    has_gifs: bool = False  # True if animated GIFs dataset exists
     metadata_fields: list[str] = []
     errors: list[str] = []
     warnings: list[str] = []

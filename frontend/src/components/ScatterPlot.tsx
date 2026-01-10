@@ -29,6 +29,8 @@ interface ScatterPlotProps {
   width?: number;
   height?: number;
   projectId?: string;
+  hasThumbnails?: boolean;
+  hasGifs?: boolean;
 }
 
 // Color palettes
@@ -137,7 +139,7 @@ function rgbaToCSS(color: [number, number, number, number]): string {
   return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3] / 255})`;
 }
 
-export function ScatterPlot({ data, width = 800, height = 600, projectId }: ScatterPlotProps) {
+export function ScatterPlot({ data, width = 800, height = 600, projectId, hasThumbnails = false, hasGifs = false }: ScatterPlotProps) {
   const { selectedIndices, toggleSelection, colorBy, showSelectedOnly, metadataFilters, selectByRegion, clearSelection, clusterLabels } = useProjectStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [interactionMode, setInteractionMode] = useState<'select' | 'pan' | 'box' | 'lasso' | 'similar'>('select');
@@ -487,6 +489,42 @@ export function ScatterPlot({ data, width = 800, height = 600, projectId }: Scat
           const meta = Object.entries(data.metadata)
             .map(([key, values]) => `${key}: ${values[object.index]}`)
             .join('\n');
+
+          // If GIFs or thumbnails available, use HTML tooltip with image
+          if ((hasGifs || hasThumbnails) && projectId) {
+            // Prefer GIF if available, otherwise use thumbnail
+            const imageUrl = hasGifs
+              ? `/api/project/${projectId}/gif/${object.index}`
+              : `/api/project/${projectId}/thumbnail/${object.index}`;
+            const metaHtml = Object.entries(data.metadata)
+              .map(([key, values]) => `<div><span style="color:#9ca3af">${key}:</span> ${values[object.index]}</div>`)
+              .join('');
+            return {
+              html: `
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                  <img src="${imageUrl}"
+                       style="width:128px;height:128px;object-fit:cover;border-radius:4px;flex-shrink:0;"
+                       onerror="this.style.display='none'" />
+                  <div>
+                    <div style="font-weight:600;margin-bottom:4px;">${object.id}</div>
+                    <div style="color:#9ca3af;font-size:11px;margin-bottom:8px;">Index: ${object.index}</div>
+                    <div style="font-size:11px;line-height:1.5;">${metaHtml}</div>
+                  </div>
+                </div>
+              `,
+              style: {
+                backgroundColor: 'rgba(0,0,0,0.95)',
+                color: 'white',
+                fontSize: '12px',
+                padding: '12px',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                maxWidth: '400px',
+              },
+            };
+          }
+
+          // Text-only tooltip (no thumbnails or GIFs)
           return {
             text: `Episode: ${object.id}\nIndex: ${object.index}\n${meta}`,
             style: {

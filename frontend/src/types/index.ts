@@ -7,6 +7,9 @@ export interface Project {
   has_success_labels: boolean;
   has_task_labels: boolean;
   has_episode_length: boolean;
+  has_embeddings: boolean;  // False for metadata-only projects
+  has_thumbnails: boolean;  // True if thumbnails are available for hover preview
+  has_gifs: boolean;  // True if animated GIFs are available
   dataset_name: string | null;
   description: string | null;
   created_at: string;
@@ -79,6 +82,8 @@ export interface ValidationResult {
   has_task: boolean;
   has_episode_length: boolean;
   has_dataset: boolean;
+  has_embeddings: boolean;  // False for metadata-only files
+  has_gifs: boolean;  // True if animated GIFs are available
   metadata_fields: string[];
   errors: string[];
   warnings: string[];

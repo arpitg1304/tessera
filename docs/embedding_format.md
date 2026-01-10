@@ -6,9 +6,10 @@ Tessera uses HDF5 (`.h5`) files to store episode embeddings and metadata. This d
 
 ```
 embeddings.h5
-├── embeddings          # REQUIRED
+├── embeddings          # OPTIONAL (for metadata-only mode)
 ├── episode_ids         # REQUIRED
-└── metadata/           # OPTIONAL
+├── thumbnails          # OPTIONAL (JPEG-compressed images for hover preview)
+└── metadata/           # OPTIONAL but recommended
     ├── success
     ├── episode_length
     ├── task
@@ -16,9 +17,22 @@ embeddings.h5
     └── [custom fields]
 ```
 
-## Required Datasets
+## Metadata-Only Mode
 
-### `embeddings`
+Tessera supports a **metadata-only mode** where the `embeddings` dataset is optional. This is useful when you want to:
+- Filter and sample episodes based on metadata without generating embeddings
+- Quickly explore episode distributions by category
+- Export episode IDs based on metadata criteria
+
+In metadata-only mode:
+- The 2D scatter plot visualization is disabled
+- K-means diversity sampling is disabled (requires embeddings)
+- Stratified and random sampling remain available
+- All filtering and export features work normally
+
+## Datasets
+
+### `embeddings` (Optional)
 
 The main embedding array containing vector representations of each episode.
 
@@ -111,6 +125,55 @@ Dataset source labels (for multi-dataset projects).
 | **Shape** | `(N,)` |
 | **dtype** | Variable-length string |
 | **Use** | Filter by dataset, stratified sampling |
+
+## Thumbnails (Optional)
+
+The `thumbnails` dataset allows embedding preview images for each episode. When present, Tessera displays these images on hover in the scatter plot visualization.
+
+### `thumbnails`
+
+JPEG-compressed images stored as variable-length byte arrays.
+
+| Property | Value |
+|----------|-------|
+| **Shape** | `(N,)` |
+| **dtype** | Variable-length bytes (`h5py.vlen_dtype(np.uint8)`) |
+| **Max size** | ~10KB per thumbnail recommended |
+| **Recommended resolution** | 128x128 or 160x120 pixels |
+
+**Best Practices:**
+- Use JPEG compression (quality 70-85) for small file sizes
+- Resize images to thumbnail resolution before compression
+- Use the first frame of each episode for consistency
+- Total thumbnails should add <50MB to file size
+
+**Example:**
+```python
+import io
+import numpy as np
+import h5py
+from PIL import Image
+
+def compress_thumbnail(image: np.ndarray, size=(128, 128), quality=80) -> bytes:
+    """Compress an image to JPEG bytes."""
+    pil_image = Image.fromarray(image)
+    pil_image = pil_image.resize(size, Image.LANCZOS)
+    buffer = io.BytesIO()
+    pil_image.save(buffer, format='JPEG', quality=quality)
+    return buffer.getvalue()
+
+# Create thumbnails from first frames
+thumbnails = []
+for episode in episodes:
+    first_frame = get_first_frame(episode)  # Your frame extraction function
+    thumbnail_bytes = compress_thumbnail(first_frame)
+    thumbnails.append(np.frombuffer(thumbnail_bytes, dtype=np.uint8))
+
+# Save to HDF5
+with h5py.File('embeddings.h5', 'a') as f:
+    vlen_dtype = h5py.vlen_dtype(np.uint8)
+    f.create_dataset('thumbnails', data=thumbnails, dtype=vlen_dtype)
+```
 
 ### Custom Fields
 

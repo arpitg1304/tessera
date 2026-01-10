@@ -11,9 +11,10 @@ import { Eye, EyeOff, Palette, Filter, X, Plus, Grid3x3, ChevronDown, ChevronRig
 interface ControlPanelProps {
   data: VisualizationData;
   projectId?: string;
+  hasEmbeddings?: boolean;  // If false, hide embedding-dependent features
 }
 
-export function ControlPanel({ data, projectId }: ControlPanelProps) {
+export function ControlPanel({ data, projectId, hasEmbeddings = true }: ControlPanelProps) {
   const {
     colorBy,
     setColorBy,
@@ -67,7 +68,8 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
       label: 'Episode Length',
       available: 'episode_length' in data.metadata,
     },
-    { value: 'cluster', label: 'Cluster', available: clusterLabels !== null },
+    // Cluster coloring only available with embeddings
+    { value: 'cluster', label: 'Cluster', available: hasEmbeddings && clusterLabels !== null },
   ];
 
   // Get field type and available operators
@@ -110,28 +112,30 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
         <Palette className="w-5 h-5" />
-        Visualization
+        {hasEmbeddings ? 'Visualization' : 'Controls'}
       </h3>
 
-      {/* Color by selector */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Color by</label>
-        <select
-          value={colorBy}
-          onChange={(e) => setColorBy(e.target.value as ColorScheme)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-        >
-          {colorOptions.map((option) => (
-            <option key={option.value} value={option.value} disabled={!option.available}>
-              {option.label}
-              {!option.available && ' (not available)'}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Color by selector - only for projects with visualization */}
+      {hasEmbeddings && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Color by</label>
+          <select
+            value={colorBy}
+            onChange={(e) => setColorBy(e.target.value as ColorScheme)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            {colorOptions.map((option) => (
+              <option key={option.value} value={option.value} disabled={!option.available}>
+                {option.label}
+                {!option.available && ' (not available)'}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-      {/* Clustering controls */}
-      {projectId && (
+      {/* Clustering controls - only available with embeddings */}
+      {projectId && hasEmbeddings && (
         <div className="border-t pt-3">
           <button
             onClick={() => setClusteringExpanded(!clusteringExpanded)}
@@ -182,22 +186,24 @@ export function ControlPanel({ data, projectId }: ControlPanelProps) {
         </div>
       )}
 
-      {/* Show selected only toggle */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Show selected only</span>
-        <button
-          onClick={() => setShowSelectedOnly(!showSelectedOnly)}
-          className={`
-            p-2 rounded-lg transition-colors
-            ${showSelectedOnly
-              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }
-          `}
-        >
-          {showSelectedOnly ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-        </button>
-      </div>
+      {/* Show selected only toggle - only for projects with visualization */}
+      {hasEmbeddings && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Show selected only</span>
+          <button
+            onClick={() => setShowSelectedOnly(!showSelectedOnly)}
+            className={`
+              p-2 rounded-lg transition-colors
+              ${showSelectedOnly
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }
+            `}
+          >
+            {showSelectedOnly ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+          </button>
+        </div>
+      )}
 
       {/* Metadata filters */}
       <div className="border-t pt-3">

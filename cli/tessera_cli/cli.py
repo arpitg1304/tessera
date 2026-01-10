@@ -28,7 +28,14 @@ def validate(filepath: str):
         click.echo()
         click.secho("✓ Valid format", fg='green', bold=True)
         click.echo(f"✓ {result['n_episodes']:,} episodes")
-        click.echo(f"✓ Embedding dimension: {result['embedding_dim']}")
+
+        if result.get('has_embeddings', True):
+            click.echo(f"✓ Embedding dimension: {result['embedding_dim']}")
+        else:
+            click.secho("✓ Metadata-only mode (no embeddings)", fg='cyan')
+
+        if result.get('has_thumbnails', False):
+            click.secho("✓ Thumbnails included (hover preview enabled)", fg='cyan')
 
         if result['metadata_fields']:
             click.echo(f"✓ Metadata: {', '.join(result['metadata_fields'])}")

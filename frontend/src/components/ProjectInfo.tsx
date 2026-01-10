@@ -1,7 +1,7 @@
 // Project metadata display component
 
 import { useState } from 'react';
-import { Calendar, Clock, Database, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, Database, Layers, ChevronDown, ChevronRight, Image } from 'lucide-react';
 import type { Project } from '../types';
 
 interface ProjectInfoProps {
@@ -66,10 +66,25 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
         <div className="flex items-center gap-3">
           <Layers className="w-5 h-5 text-gray-400" />
           <div>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Embedding Dimension</p>
-            <p className="font-medium text-gray-900 dark:text-white">{project.embedding_dim}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Embeddings</p>
+            {project.has_embeddings ? (
+              <p className="font-medium text-gray-900 dark:text-white">{project.embedding_dim}-dimensional</p>
+            ) : (
+              <p className="font-medium text-yellow-600 dark:text-yellow-400">Not included (metadata only)</p>
+            )}
           </div>
         </div>
+
+        {/* Thumbnails */}
+        {project.has_thumbnails && (
+          <div className="flex items-center gap-3">
+            <Image className="w-5 h-5 text-gray-400" />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Thumbnails</p>
+              <p className="font-medium text-green-600 dark:text-green-400">Hover preview enabled</p>
+            </div>
+          </div>
+        )}
 
         {/* Created date */}
         <div className="flex items-center gap-3">

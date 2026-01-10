@@ -10,6 +10,7 @@ import type { VisualizationData } from '../types';
 interface SamplingPanelProps {
   projectId: string;
   data: VisualizationData;
+  hasEmbeddings?: boolean;  // If false, disable embedding-dependent strategies
 }
 
 type Strategy = 'kmeans' | 'stratified' | 'random' | 'cluster';
@@ -37,8 +38,9 @@ const STRATEGY_INFO = {
   },
 };
 
-export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
-  const [strategy, setStrategy] = useState<Strategy>('kmeans');
+export function SamplingPanel({ projectId, data, hasEmbeddings = true }: SamplingPanelProps) {
+  // Default to random sampling if no embeddings (can't use kmeans/cluster)
+  const [strategy, setStrategy] = useState<Strategy>(hasEmbeddings ? 'kmeans' : 'random');
   const [nSamples, setNSamples] = useState(Math.min(100, data.n_episodes));
   const [stratifyBy, setStratifyBy] = useState<string>(
     Object.keys(data.metadata)[0] || ''
@@ -147,14 +149,19 @@ export function SamplingPanel({ projectId, data }: SamplingPanelProps) {
         >
           {(Object.keys(STRATEGY_INFO) as Strategy[]).map((s) => {
             const info = STRATEGY_INFO[s];
+            // Disable embedding-dependent strategies when no embeddings
             const isDisabled =
               (s === 'stratified' && Object.keys(data.metadata).length === 0) ||
-              (s === 'cluster' && !clusterLabels);
+              (s === 'cluster' && !clusterLabels) ||
+              (s === 'kmeans' && !hasEmbeddings) ||
+              (s === 'cluster' && !hasEmbeddings);
 
             return (
               <option key={s} value={s} disabled={isDisabled}>
                 {info.name}
-                {isDisabled && ' (not available)'}
+                {isDisabled && (s === 'kmeans' || s === 'cluster') && !hasEmbeddings
+                  ? ' (requires embeddings)'
+                  : isDisabled ? ' (not available)' : ''}
               </option>
             );
           })}

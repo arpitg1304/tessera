@@ -34,14 +34,26 @@ async def sample_episodes_endpoint(
     if embeddings_path is None:
         raise HTTPException(status_code=404, detail="Embeddings file not found")
 
-    # Load embeddings
-    try:
-        embeddings = load_embeddings(embeddings_path)
-    except Exception as e:
+    # Check if embeddings are required for this strategy
+    needs_embeddings = request.strategy == "kmeans"
+    if needs_embeddings and not project.has_embeddings:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to load embeddings: {str(e)}"
+            status_code=400,
+            detail="K-means sampling requires embeddings. Use stratified or random sampling for metadata-only projects."
         )
+
+    # Load embeddings only if needed
+    embeddings = None
+    if project.has_embeddings:
+        try:
+            embeddings = load_embeddings(embeddings_path)
+        except Exception as e:
+            if needs_embeddings:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to load embeddings: {str(e)}"
+                )
+            # For non-embedding strategies, continue without embeddings
 
     # Handle filter_indices - if provided, we sample only from these indices
     filter_indices = None
@@ -57,8 +69,9 @@ async def sample_episodes_endpoint(
         available_count = len(filter_indices)
         # Store mapping from filtered space to original space
         index_mapping = filter_indices
-        # Filter embeddings to only include filtered indices
-        embeddings = embeddings[filter_indices]
+        # Filter embeddings to only include filtered indices (if embeddings exist)
+        if embeddings is not None:
+            embeddings = embeddings[filter_indices]
     else:
         available_count = project.n_episodes
 
@@ -107,7 +120,8 @@ async def sample_episodes_endpoint(
             strategy=request.strategy,
             metadata=metadata,
             stratify_by=request.stratify_by,
-            random_state=request.random_seed
+            random_state=request.random_seed,
+            n_total=available_count  # Pass total for metadata-only projects
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, AlertCircle, RefreshCw, Database } from 'lucide-react';
 import { useProject, useVisualization, useVisualizationStatus, useTriggerUmap } from '../hooks/useProjectData';
 import { ScatterPlot } from '../components/ScatterPlot';
 import { ControlPanel } from '../components/ControlPanel';
@@ -12,6 +12,7 @@ import { ExportModal } from '../components/ExportModal';
 import { CodeSnippetModal } from '../components/CodeSnippetModal';
 import { SelectionStats } from '../components/SelectionStats';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { ThumbnailGallery } from '../components/ThumbnailGallery';
 import { useProjectStore } from '../stores/projectStore';
 
 export function Dashboard() {
@@ -105,65 +106,107 @@ export function Dashboard() {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <ProjectInfo project={project} />
-            {vizData && <ControlPanel data={vizData} projectId={projectId} />}
+            {vizData && <ControlPanel data={vizData} projectId={projectId} hasEmbeddings={project.has_embeddings} />}
           </div>
 
           {/* Main visualization area */}
           <div className="lg:col-span-2">
-            {vizLoading ? (
+            {/* Metadata-only mode banner */}
+            {!project.has_embeddings && (
               <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-8 flex flex-col items-center justify-center min-h-[500px]">
-                <Loader2 className="w-12 h-12 animate-spin text-primary-600 mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-2">Computing UMAP visualization...</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  This may take a minute for large datasets
+                <Database className="w-16 h-16 text-primary-500 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Metadata-Only Mode
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-center max-w-md mb-4">
+                  This project contains episode metadata but no embeddings.
+                  You can still filter, sample, and export episodes based on metadata.
                 </p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-sm text-gray-600 dark:text-gray-400">
+                  <p className="font-medium text-gray-900 dark:text-white mb-2">Available features:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Filter episodes by metadata</li>
+                    <li>Stratified sampling by category</li>
+                    <li>Random sampling</li>
+                    <li>Export episode IDs</li>
+                  </ul>
+                </div>
               </div>
-            ) : vizError ? (
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-8 flex flex-col items-center justify-center min-h-[500px]">
-                <AlertCircle className="w-12 h-12 text-yellow-500 mb-4" />
-                <p className="text-gray-900 dark:text-white font-medium mb-2">Visualization not ready</p>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                  {vizStatus?.message || 'UMAP computation may still be in progress'}
-                </p>
-                <button
-                  onClick={() => triggerUmap.mutate()}
-                  disabled={triggerUmap.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  {triggerUmap.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )}
-                  {triggerUmap.isPending ? 'Starting...' : 'Compute Visualization'}
-                </button>
-              </div>
-            ) : vizData ? (
-              <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
-                <ScatterPlot
-                  data={vizData}
-                  width={800}
-                  height={600}
-                  projectId={projectId}
-                />
-              </div>
-            ) : null}
+            )}
 
-            {/* Visualization tips */}
-            {vizData && (
-              <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                <p>
-                  <strong>Tips:</strong> Click on points to select/deselect. Use mouse wheel to zoom, drag to pan.
-                  {!vizData.umap_cached && (
-                    <span className="ml-2 text-green-600">
-                      (UMAP freshly computed)
-                    </span>
-                  )}
-                </p>
-                <p>
-                  <strong>Keyboard:</strong> S select • P pan • B box • L lasso • N similar • C clear • Shift add • Alt remove
-                </p>
-              </div>
+            {/* Scatter plot visualization (only for projects with embeddings) */}
+            {project.has_embeddings && (
+              <>
+                {vizLoading ? (
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-8 flex flex-col items-center justify-center min-h-[500px]">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary-600 mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">Computing UMAP visualization...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      This may take a minute for large datasets
+                    </p>
+                  </div>
+                ) : vizError ? (
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-8 flex flex-col items-center justify-center min-h-[500px]">
+                    <AlertCircle className="w-12 h-12 text-yellow-500 mb-4" />
+                    <p className="text-gray-900 dark:text-white font-medium mb-2">Visualization not ready</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                      {vizStatus?.message || 'UMAP computation may still be in progress'}
+                    </p>
+                    <button
+                      onClick={() => triggerUmap.mutate()}
+                      disabled={triggerUmap.isPending}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      {triggerUmap.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )}
+                      {triggerUmap.isPending ? 'Starting...' : 'Compute Visualization'}
+                    </button>
+                  </div>
+                ) : vizData ? (
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
+                    <ScatterPlot
+                      data={vizData}
+                      width={800}
+                      height={600}
+                      projectId={projectId}
+                      hasThumbnails={project.has_thumbnails}
+                      hasGifs={project.has_gifs}
+                    />
+                  </div>
+                ) : null}
+
+                {/* Visualization tips */}
+                {vizData && (
+                  <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                    <p>
+                      <strong>Tips:</strong> Click on points to select/deselect. Use mouse wheel to zoom, drag to pan.
+                      {!vizData.umap_cached && (
+                        <span className="ml-2 text-green-600">
+                          (UMAP freshly computed)
+                        </span>
+                      )}
+                    </p>
+                    <p>
+                      <strong>Keyboard:</strong> S select • P pan • B box • L lasso • N similar • C clear • Shift add • Alt remove
+                    </p>
+                  </div>
+                )}
+
+                {/* Thumbnail Gallery - only shown if thumbnails or GIFs exist */}
+                {vizData && (project.has_thumbnails || project.has_gifs) && projectId && (
+                  <div className="mt-6">
+                    <ThumbnailGallery
+                      projectId={projectId}
+                      data={vizData}
+                      hasThumbnails={project.has_thumbnails}
+                      hasGifs={project.has_gifs}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -173,7 +216,7 @@ export function Dashboard() {
               <SelectionStats data={vizData} selectedIndices={selectedIndices} />
             )}
             {vizData && projectId && (
-              <SamplingPanel projectId={projectId} data={vizData} />
+              <SamplingPanel projectId={projectId} data={vizData} hasEmbeddings={project.has_embeddings} />
             )}
           </div>
         </div>

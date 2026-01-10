@@ -53,12 +53,8 @@ data/
 *.hdf5
 *.npy
 
-# Ignore all .h5 files except curated examples
+# Ignore all .h5 files
 *.h5
-!examples/sample_data/pusht_embeddings.h5
-!examples/sample_data/droid_100_embeddings.h5
-!examples/sample_data/aloha_sim_embeddings.h5
-!examples/sample_data/test_1k_embeddings.h5
 
 # Database
 *.db
@@ -89,10 +85,3 @@ DEPLOYMENT.md
 
 # Scripts directory (user deployment scripts)
 scripts/
-
-# Example sample data - only include curated examples
-examples/sample_data/*
-!examples/sample_data/pusht_embeddings.h5
-!examples/sample_data/droid_100_embeddings.h5
-!examples/sample_data/aloha_sim_embeddings.h5
-!examples/sample_data/test_1k_embeddings.h5

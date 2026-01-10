@@ -1,0 +1,1 @@
+other kickass feature that I have been thinking about is : Use can optionally upload the embedding files with the image from first frame of each episode, or even embed the image data (compressed, small image)in the embedding file itself.Now when the user looks at the plot and hovers over the points, the image frame shows up. What do you think?
