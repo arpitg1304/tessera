@@ -6,6 +6,8 @@ Tessera is a web application for visualizing episode embeddings and selecting ma
 
 > **Train on 10K diverse episodes instead of 50K random ones.**
 
+**[Try it live at tessera.vlastudio.cloud](https://tessera.vlastudio.cloud)** - No installation required!
+
 ![Tessera Dashboard](docs/images/dashboard.png)
 
 ## Features

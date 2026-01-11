@@ -3,7 +3,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { UploadZone } from '../components/UploadZone';
-import { BarChart3, Target, Download, Zap, Settings, Database, ArrowRight } from 'lucide-react';
+import { BarChart3, Target, Download, Zap, Settings, Database, ArrowRight, ExternalLink } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import axios from 'axios';
 
@@ -193,11 +193,23 @@ export function Home() {
         </div>
 
         {/* BYOE note */}
-        <div className="text-center">
+        <div className="text-center space-y-3">
           <span className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <Zap className="w-4 h-4 text-yellow-500" />
             <strong>Bring Your Own Embeddings</strong> — Generate on your infrastructure, visualize here
           </span>
+          <div>
+            <a
+              href="https://colab.research.google.com/drive/1pVsTizT8Ec1iST0tyNDzhgh4h6YUtZUh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+            >
+              <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" className="h-5" />
+              Generate embeddings from LeRobot datasets
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
       </main>
 
