@@ -9,6 +9,7 @@ Tessera is a web application for visualizing episode embeddings and selecting ma
 ## Features
 
 - **Interactive 2D Visualization**: UMAP-reduced scatter plot of your episode embeddings
+- **Hover Previews**: See thumbnails or animated GIFs of episodes on hover
 - **Intelligent Sampling**: K-means diversity sampling to maximize coverage
 - **Stratified Sampling**: Balance across metadata categories (task, success, etc.)
 - **Export**: Download selected episode IDs as JSON/CSV with Python code snippets
@@ -75,6 +76,8 @@ Tessera expects HDF5 files with this structure:
 embeddings.h5
 ├── embeddings          # (N, D) float32 array
 ├── episode_ids         # (N,) string array
+├── thumbnails          # Optional: JPEG images for hover preview
+├── gifs                # Optional: Animated GIFs for hover preview
 └── metadata/           # Optional but recommended
     ├── success         # (N,) bool
     ├── task            # (N,) string
@@ -106,18 +109,25 @@ Without metadata, you can only sample from all episodes. With metadata, you can 
 
 ### Quick Start: LeRobot Datasets
 
-For LeRobot datasets from HuggingFace, use the included script:
+For LeRobot v3.0 datasets, use the included script:
 
 ```bash
-# One command to download, generate embeddings, and upload
-examples/scripts/generate-embeddings-from-hf.sh arpitg1304/eval_smolvla_stack_lego
+# Generate embeddings with animated GIF previews
+python examples/scripts/generate_lerobot_embeddings_v3.py \
+    ~/.cache/huggingface/lerobot/pusht \
+    -o pusht_embeddings.h5 \
+    --gifs \
+    --mode start_end
+
+# Upload to Tessera
+tessera upload pusht_embeddings.h5
 ```
 
 See [EMBEDDINGS_README.md](EMBEDDINGS_README.md) for full documentation on:
 - Generating CLIP embeddings from LeRobot datasets
 - Different embedding modes (single frame, average, start+end)
+- Adding thumbnails and animated GIFs for hover previews
 - Custom video keys and camera views
-- Batch processing multiple datasets
 
 ### Custom Embeddings
 

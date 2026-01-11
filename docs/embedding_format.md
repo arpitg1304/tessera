@@ -9,6 +9,7 @@ embeddings.h5
 ├── embeddings          # OPTIONAL (for metadata-only mode)
 ├── episode_ids         # REQUIRED
 ├── thumbnails          # OPTIONAL (JPEG-compressed images for hover preview)
+├── gifs                # OPTIONAL (animated GIFs for hover preview, plays on hover)
 └── metadata/           # OPTIONAL but recommended
     ├── success
     ├── episode_length
@@ -175,6 +176,86 @@ with h5py.File('embeddings.h5', 'a') as f:
     f.create_dataset('thumbnails', data=thumbnails, dtype=vlen_dtype)
 ```
 
+## GIFs (Optional)
+
+The `gifs` dataset allows embedding animated previews for each episode. When present, Tessera displays these GIFs on hover in the scatter plot visualization, providing a quick preview of the episode trajectory.
+
+### `gifs`
+
+GIF-compressed animations stored as variable-length byte arrays.
+
+| Property | Value |
+|----------|-------|
+| **Shape** | `(N,)` |
+| **dtype** | Variable-length bytes (`h5py.vlen_dtype(np.uint8)`) |
+| **Max size** | ~500KB per GIF recommended |
+| **Recommended resolution** | 128x128 pixels |
+| **Recommended FPS** | 8-10 fps |
+| **Recommended frames** | 8-16 frames per GIF |
+
+**Best Practices:**
+- Sample frames evenly across the episode (e.g., 16 frames from a 200-frame episode)
+- Use 128x128 resolution for good balance of quality and file size
+- Keep total GIF data under 100MB for reasonable upload times
+- Consider using start+end frame sampling for shorter GIFs that still show task completion
+
+**Example:**
+```python
+import io
+import numpy as np
+import h5py
+from PIL import Image
+
+def create_gif(frames: list[np.ndarray], size=(128, 128), fps=8, max_frames=16) -> bytes:
+    """Create a GIF from a list of frames."""
+    # Sample frames evenly if too many
+    if len(frames) > max_frames:
+        indices = np.linspace(0, len(frames) - 1, max_frames, dtype=int)
+        frames = [frames[i] for i in indices]
+
+    # Convert to PIL images and resize
+    pil_frames = []
+    for frame in frames:
+        img = Image.fromarray(frame)
+        img = img.resize(size, Image.LANCZOS)
+        pil_frames.append(img)
+
+    # Save as GIF
+    buffer = io.BytesIO()
+    pil_frames[0].save(
+        buffer,
+        format='GIF',
+        save_all=True,
+        append_images=pil_frames[1:],
+        duration=int(1000 / fps),
+        loop=0
+    )
+    return buffer.getvalue()
+
+# Create GIFs from episode frames
+gifs = []
+for episode in episodes:
+    episode_frames = get_episode_frames(episode)  # Your frame extraction function
+    gif_bytes = create_gif(episode_frames)
+    gifs.append(np.frombuffer(gif_bytes, dtype=np.uint8))
+
+# Save to HDF5
+with h5py.File('embeddings.h5', 'a') as f:
+    vlen_dtype = h5py.vlen_dtype(np.uint8)
+    f.create_dataset('gifs', data=gifs, dtype=vlen_dtype)
+```
+
+### Thumbnails vs GIFs
+
+| Feature | Thumbnails | GIFs |
+|---------|------------|------|
+| **Content** | Single frame (first frame) | Animated sequence |
+| **File size** | ~5-15 KB each | ~50-200 KB each |
+| **Use case** | Quick identification | Understanding episode behavior |
+| **Display** | Shows immediately on hover | Plays animation on hover |
+
+You can include both thumbnails and GIFs in the same file. Tessera will display the GIF on hover if available, falling back to the thumbnail if not.
+
 ### Custom Fields
 
 You can add any custom metadata fields:
@@ -254,14 +335,13 @@ Tessera validates uploaded files against these rules:
 
 ## File Size Guidelines
 
-| Episodes | Dimension | Approx. Size |
-|----------|-----------|--------------|
-| 1,000 | 512 | ~2 MB |
-| 10,000 | 512 | ~20 MB |
-| 50,000 | 512 | ~100 MB |
-| 100,000 | 512 | ~200 MB* |
+| Episodes | Dimension | Approx. Size (embeddings only) | With Thumbnails | With GIFs |
+|----------|-----------|-------------------------------|-----------------|-----------|
+| 1,000 | 512 | ~2 MB | ~12 MB | ~100 MB |
+| 10,000 | 512 | ~20 MB | ~120 MB | ~1 GB |
+| 50,000 | 512 | ~100 MB | ~600 MB | ~5 GB |
 
-*Files over 100MB will be rejected.
+**Note:** Files with GIFs can be significantly larger. Consider using thumbnails instead for datasets with many episodes, or reduce GIF quality/resolution.
 
 ## Example: Complete File
 
@@ -296,6 +376,74 @@ with h5py.File('my_embeddings.h5', 'w') as f:
     metadata.create_dataset('task', data=task)
 
 print("File created successfully!")
+```
+
+### Example: Complete File with Thumbnails and GIFs
+
+```python
+import io
+import numpy as np
+import h5py
+from PIL import Image
+
+def compress_thumbnail(image: np.ndarray, size=(128, 128), quality=80) -> bytes:
+    """Compress an image to JPEG bytes."""
+    pil_image = Image.fromarray(image)
+    pil_image = pil_image.resize(size, Image.LANCZOS)
+    buffer = io.BytesIO()
+    pil_image.save(buffer, format='JPEG', quality=quality)
+    return buffer.getvalue()
+
+def create_gif(frames: list, size=(128, 128), fps=8, max_frames=16) -> bytes:
+    """Create a GIF from episode frames."""
+    if len(frames) > max_frames:
+        indices = np.linspace(0, len(frames) - 1, max_frames, dtype=int)
+        frames = [frames[i] for i in indices]
+
+    pil_frames = [Image.fromarray(f).resize(size, Image.LANCZOS) for f in frames]
+
+    buffer = io.BytesIO()
+    pil_frames[0].save(
+        buffer, format='GIF', save_all=True,
+        append_images=pil_frames[1:], duration=int(1000/fps), loop=0
+    )
+    return buffer.getvalue()
+
+# Your episode data
+episodes = load_your_episodes()  # Returns list of episode frame arrays
+
+# Generate embeddings, thumbnails, and GIFs
+embeddings = []
+thumbnails = []
+gifs = []
+episode_ids = []
+
+for i, episode_frames in enumerate(episodes):
+    # Generate CLIP embedding from middle frame
+    embedding = generate_clip_embedding(episode_frames[len(episode_frames)//2])
+    embeddings.append(embedding)
+
+    # Create thumbnail from first frame
+    thumb_bytes = compress_thumbnail(episode_frames[0])
+    thumbnails.append(np.frombuffer(thumb_bytes, dtype=np.uint8))
+
+    # Create GIF from sampled frames
+    gif_bytes = create_gif(episode_frames)
+    gifs.append(np.frombuffer(gif_bytes, dtype=np.uint8))
+
+    episode_ids.append(f"ep_{i:05d}")
+
+# Save file
+with h5py.File('my_embeddings.h5', 'w') as f:
+    f.create_dataset('embeddings', data=np.array(embeddings, dtype=np.float32))
+    f.create_dataset('episode_ids', data=episode_ids)
+
+    # Thumbnails and GIFs use variable-length dtype
+    vlen_dtype = h5py.vlen_dtype(np.uint8)
+    f.create_dataset('thumbnails', data=thumbnails, dtype=vlen_dtype)
+    f.create_dataset('gifs', data=gifs, dtype=vlen_dtype)
+
+print("File with thumbnails and GIFs created!")
 ```
 
 ## Troubleshooting
