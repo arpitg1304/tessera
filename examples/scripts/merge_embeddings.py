@@ -3,7 +3,7 @@
 Merge multiple embedding files into a single file for Tessera.
 
 This script combines embeddings from multiple .h5 files, preserving
-metadata and adding a 'dataset' field for visualization grouping.
+metadata, thumbnails, GIFs, and adding a 'dataset' field for visualization grouping.
 
 Usage:
     python merge_embeddings.py file1.h5 file2.h5 file3.h5 -o combined.h5
@@ -47,8 +47,12 @@ def merge_embeddings(
     all_episode_ids = []
     all_datasets = []
     all_metadata = {}
+    all_thumbnails = []
+    all_gifs = []
 
     embedding_dim = None
+    has_thumbnails = None
+    has_gifs = None
 
     print(f"Merging {len(input_files)} files...")
 
@@ -99,7 +103,45 @@ def merge_embeddings(
 
                         all_metadata[key].extend(values)
 
-                print(f"    {n_episodes} episodes, dim={embeddings.shape[1]}")
+                # Read thumbnails (variable-length byte arrays)
+                file_has_thumbnails = 'thumbnails' in f
+                if has_thumbnails is None:
+                    has_thumbnails = file_has_thumbnails
+                elif has_thumbnails != file_has_thumbnails:
+                    print(f"    Warning: Thumbnail availability mismatch, skipping thumbnails")
+                    has_thumbnails = False
+
+                if file_has_thumbnails and has_thumbnails:
+                    for j in range(n_episodes):
+                        thumb_data = f['thumbnails'][j]
+                        if hasattr(thumb_data, 'tobytes'):
+                            all_thumbnails.append(thumb_data.tobytes())
+                        else:
+                            all_thumbnails.append(bytes(thumb_data))
+
+                # Read GIFs (variable-length byte arrays)
+                file_has_gifs = 'gifs' in f
+                if has_gifs is None:
+                    has_gifs = file_has_gifs
+                elif has_gifs != file_has_gifs:
+                    print(f"    Warning: GIF availability mismatch, skipping GIFs")
+                    has_gifs = False
+
+                if file_has_gifs and has_gifs:
+                    for j in range(n_episodes):
+                        gif_data = f['gifs'][j]
+                        if hasattr(gif_data, 'tobytes'):
+                            all_gifs.append(gif_data.tobytes())
+                        else:
+                            all_gifs.append(bytes(gif_data))
+
+                extras = []
+                if file_has_thumbnails:
+                    extras.append("thumbnails")
+                if file_has_gifs:
+                    extras.append("gifs")
+                extras_str = f", {'+'.join(extras)}" if extras else ""
+                print(f"    {n_episodes} episodes, dim={embeddings.shape[1]}{extras_str}")
 
         except Exception as e:
             print(f"    Error reading {file_path}: {e}")
@@ -156,6 +198,22 @@ def merge_embeddings(
                         metadata.create_dataset(key, data=values)
                 except Exception as e:
                     print(f"  Warning: Could not save metadata '{key}': {e}")
+
+        # Save thumbnails if all files had them
+        if has_thumbnails and len(all_thumbnails) == total_episodes:
+            dt = h5py.special_dtype(vlen=np.dtype('uint8'))
+            thumbs_ds = f.create_dataset('thumbnails', (total_episodes,), dtype=dt)
+            for j, thumb_bytes in enumerate(all_thumbnails):
+                thumbs_ds[j] = np.frombuffer(thumb_bytes, dtype=np.uint8)
+            print(f"  Thumbnails: {total_episodes} included")
+
+        # Save GIFs if all files had them
+        if has_gifs and len(all_gifs) == total_episodes:
+            dt = h5py.special_dtype(vlen=np.dtype('uint8'))
+            gifs_ds = f.create_dataset('gifs', (total_episodes,), dtype=dt)
+            for j, gif_bytes in enumerate(all_gifs):
+                gifs_ds[j] = np.frombuffer(gif_bytes, dtype=np.uint8)
+            print(f"  GIFs: {total_episodes} included")
 
     print()
     print(f"Merged {len(input_files)} datasets:")
