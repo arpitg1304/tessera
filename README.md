@@ -6,6 +6,8 @@ Tessera is a web application for visualizing episode embeddings and selecting ma
 
 > **Train on 10K diverse episodes instead of 50K random ones.**
 
+![Tessera Dashboard](docs/images/dashboard.png)
+
 ## Features
 
 - **Interactive 2D Visualization**: UMAP-reduced scatter plot of your episode embeddings
@@ -14,6 +16,12 @@ Tessera is a web application for visualizing episode embeddings and selecting ma
 - **Stratified Sampling**: Balance across metadata categories (task, success, etc.)
 - **Export**: Download selected episode IDs as JSON/CSV with Python code snippets
 - **No Account Required**: Upload, visualize, share with a link
+
+<p align="center">
+  <img src="docs/images/hover-preview.gif" alt="GIF hover preview" width="400">
+  <br>
+  <em>Hover over points to see animated episode previews</em>
+</p>
 
 ## Quick Start
 
