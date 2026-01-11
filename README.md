@@ -117,7 +117,9 @@ Without metadata, you can only sample from all episodes. With metadata, you can 
 
 ### Quick Start: LeRobot Datasets
 
-For LeRobot v3.0 datasets, use the included script:
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1pVsTizT8Ec1iST0tyNDzhgh4h6YUtZUh) **Try it in Google Colab!**
+
+For LeRobot v3.0 datasets, use the included script or the Colab notebook:
 
 ```bash
 # Generate embeddings with animated GIF previews
