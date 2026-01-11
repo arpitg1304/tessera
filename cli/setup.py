@@ -8,8 +8,8 @@ setup(
     version="1.0.0",
     description="CLI tool for Tessera dataset diversity visualization",
     author="Your Name",
-    author_email="your.email@example.com",
-    url="https://github.com/yourusername/tessera",
+    author_email="arpit.wpi@gmail.com",
+    url="https://github.com/arpitg1304/tessera",
     packages=find_packages(),
     install_requires=[
         "click>=8.0.0",
