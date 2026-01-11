@@ -5,7 +5,7 @@ Thanks for your interest in contributing to Tessera!
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/tessera.git`
+2. Clone your fork: `git clone https://github.com/arpitg1304/tessera.git`
 3. Create a branch: `git checkout -b feature/your-feature`
 4. Make your changes
 5. Run tests and ensure they pass
