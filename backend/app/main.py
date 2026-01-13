@@ -6,7 +6,7 @@ FastAPI application initialization and configuration.
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import config
@@ -146,6 +146,28 @@ async def root():
         "docs": "/docs",
         "health": "/health"
     }
+
+
+@app.post("/api/track", tags=["Analytics"])
+async def track_visit(request: Request):
+    """Track a page visit for analytics."""
+    from .database import db
+
+    # Get client IP
+    client_ip = request.client.host if request.client else "unknown"
+    # Check for forwarded IP (behind proxy)
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+
+    user_agent = request.headers.get("user-agent", "")
+
+    try:
+        db.record_visitor(client_ip, user_agent)
+    except Exception:
+        pass  # Don't fail on tracking errors
+
+    return {"status": "ok"}
 
 
 # API info endpoint

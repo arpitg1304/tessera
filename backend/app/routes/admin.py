@@ -59,6 +59,7 @@ class ProjectInfo(BaseModel):
     has_task_labels: bool
     has_episode_length: bool
     is_example: bool = False
+    example_order: int = 0
 
 
 class RateLimitInfo(BaseModel):
@@ -66,6 +67,16 @@ class RateLimitInfo(BaseModel):
     ip_address: str
     upload_count: int
     last_upload: datetime
+
+
+class VisitorStats(BaseModel):
+    """Visitor statistics."""
+    total_unique_visitors: int
+    total_page_views: int
+    visitors_24h: int
+    visitors_7d: int
+    visitors_30d: int
+    new_visitors_today: int
 
 
 class SystemStats(BaseModel):
@@ -77,6 +88,7 @@ class SystemStats(BaseModel):
     storage_usage_percent: float
     total_episodes: int
     active_ips: int
+    visitor_stats: Optional[VisitorStats] = None
 
 
 class AdminDashboard(BaseModel):
@@ -109,7 +121,7 @@ async def get_admin_dashboard(admin: str = Depends(verify_admin)):
             cursor.execute("""
                 SELECT id, dataset_name, description, n_episodes, embedding_dim,
                        created_at, expires_at, has_success_labels, has_task_labels,
-                       has_episode_length, is_example
+                       has_episode_length, is_example, example_order
                 FROM projects
                 ORDER BY created_at DESC
             """)
@@ -136,7 +148,8 @@ async def get_admin_dashboard(admin: str = Depends(verify_admin)):
                     has_success_labels=bool(row["has_success_labels"]),
                     has_task_labels=bool(row["has_task_labels"]),
                     has_episode_length=bool(row["has_episode_length"]),
-                    is_example=bool(row["is_example"]) if row["is_example"] is not None else False
+                    is_example=bool(row["is_example"]) if row["is_example"] is not None else False,
+                    example_order=row["example_order"] if row["example_order"] is not None else 0
                 ))
 
                 total_episodes += row["n_episodes"]
@@ -160,6 +173,17 @@ async def get_admin_dashboard(admin: str = Depends(verify_admin)):
                     last_upload=datetime.fromisoformat(row["last_upload"])
                 ))
 
+        # Get visitor stats
+        visitor_stats_data = db.get_visitor_stats()
+        visitor_stats = VisitorStats(
+            total_unique_visitors=visitor_stats_data["total_unique_visitors"],
+            total_page_views=visitor_stats_data["total_page_views"],
+            visitors_24h=visitor_stats_data["visitors_24h"],
+            visitors_7d=visitor_stats_data["visitors_7d"],
+            visitors_30d=visitor_stats_data["visitors_30d"],
+            new_visitors_today=visitor_stats_data["new_visitors_today"]
+        )
+
         # Build system stats
         system_stats = SystemStats(
             total_projects=len(projects),
@@ -168,7 +192,8 @@ async def get_admin_dashboard(admin: str = Depends(verify_admin)):
             storage_available_gb=storage_stats.get("available_gb", 0),
             storage_usage_percent=storage_stats.get("usage_percent", 0),
             total_episodes=total_episodes,
-            active_ips=len(rate_limits)
+            active_ips=len(rate_limits),
+            visitor_stats=visitor_stats
         )
 
         return AdminDashboard(
@@ -358,4 +383,53 @@ async def unset_project_as_example(
         raise
     except Exception as e:
         logger.error(f"Error unsetting project as example: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class UpdateExampleOrderRequest(BaseModel):
+    """Request to update example order."""
+    order: int
+
+
+@router.post("/admin/projects/{project_id}/update-order")
+async def update_example_order(
+    project_id: str,
+    request: UpdateExampleOrderRequest,
+    admin: str = Depends(verify_admin)
+):
+    """
+    Update the display order of an example project.
+
+    Args:
+        project_id: Project ID to update
+        request: New order value
+    """
+    try:
+        from ..database import get_connection
+
+        project = db.get_project(project_id)
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE projects
+                SET example_order = ?
+                WHERE id = ?
+            """, (request.order, project_id))
+            conn.commit()
+
+        logger.info(f"Admin updated order for project {project_id} to {request.order}")
+
+        return {
+            "success": True,
+            "project_id": project_id,
+            "order": request.order
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating example order: {e}")
         raise HTTPException(status_code=500, detail=str(e))

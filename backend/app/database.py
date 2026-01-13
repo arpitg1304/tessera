@@ -93,6 +93,23 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_rate_limits_ip ON rate_limits(ip_address)
         """)
 
+        # Visitors table (unique visitor tracking)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS visitors (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ip_hash TEXT NOT NULL,
+                first_visit TIMESTAMP NOT NULL,
+                last_visit TIMESTAMP NOT NULL,
+                visit_count INTEGER DEFAULT 1,
+                user_agent TEXT,
+                UNIQUE(ip_hash)
+            )
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_visitors_last_visit ON visitors(last_visit)
+        """)
+
         conn.commit()
 
 
@@ -384,6 +401,84 @@ class Database:
             """, (cutoff,))
             conn.commit()
             return cursor.rowcount
+
+    # ============== Visitor Tracking Operations ==============
+
+    def record_visitor(self, ip_address: str, user_agent: str = None) -> None:
+        """Record a visitor (tracks unique visitors by hashed IP)."""
+        import hashlib
+        # Hash IP for privacy
+        ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()[:16]
+
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            now = datetime.now()
+
+            # Try to update existing visitor
+            cursor.execute("""
+                UPDATE visitors
+                SET last_visit = ?, visit_count = visit_count + 1
+                WHERE ip_hash = ?
+            """, (now, ip_hash))
+
+            # If no existing visitor, insert new one
+            if cursor.rowcount == 0:
+                cursor.execute("""
+                    INSERT INTO visitors (ip_hash, first_visit, last_visit, visit_count, user_agent)
+                    VALUES (?, ?, ?, 1, ?)
+                """, (ip_hash, now, now, user_agent))
+
+            conn.commit()
+
+    def get_visitor_stats(self) -> dict:
+        """Get visitor statistics."""
+        with get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Total unique visitors
+            cursor.execute("SELECT COUNT(*) FROM visitors")
+            total_unique = cursor.fetchone()[0]
+
+            # Total page views
+            cursor.execute("SELECT SUM(visit_count) FROM visitors")
+            total_views = cursor.fetchone()[0] or 0
+
+            # Visitors in last 24 hours
+            cursor.execute("""
+                SELECT COUNT(*) FROM visitors
+                WHERE last_visit > datetime('now', '-24 hours')
+            """)
+            visitors_24h = cursor.fetchone()[0]
+
+            # Visitors in last 7 days
+            cursor.execute("""
+                SELECT COUNT(*) FROM visitors
+                WHERE last_visit > datetime('now', '-7 days')
+            """)
+            visitors_7d = cursor.fetchone()[0]
+
+            # Visitors in last 30 days
+            cursor.execute("""
+                SELECT COUNT(*) FROM visitors
+                WHERE last_visit > datetime('now', '-30 days')
+            """)
+            visitors_30d = cursor.fetchone()[0]
+
+            # New visitors today
+            cursor.execute("""
+                SELECT COUNT(*) FROM visitors
+                WHERE first_visit > datetime('now', '-24 hours')
+            """)
+            new_today = cursor.fetchone()[0]
+
+            return {
+                "total_unique_visitors": total_unique,
+                "total_page_views": total_views,
+                "visitors_24h": visitors_24h,
+                "visitors_7d": visitors_7d,
+                "visitors_30d": visitors_30d,
+                "new_visitors_today": new_today
+            }
 
 
 # Global database instance

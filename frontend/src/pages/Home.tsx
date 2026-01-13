@@ -23,6 +23,10 @@ export function Home() {
   const [loadingExamples, setLoadingExamples] = useState(true);
 
   useEffect(() => {
+    // Track page visit
+    axios.post('/api/track').catch(() => {});
+
+    // Load examples
     axios.get('/api/project/examples/list')
       .then(res => setExamples(res.data))
       .catch(() => setExamples([]))
