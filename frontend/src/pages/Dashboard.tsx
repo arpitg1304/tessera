@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Loader2, AlertCircle, RefreshCw, Database } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, AlertCircle, RefreshCw, Database, Link2, Check } from 'lucide-react';
 import { useProject, useVisualization, useVisualizationStatus, useTriggerUmap } from '../hooks/useProjectData';
 import { ScatterPlot } from '../components/ScatterPlot';
 import { ControlPanel } from '../components/ControlPanel';
@@ -19,6 +19,15 @@ export function Dashboard() {
   const { projectId } = useParams<{ projectId: string }>();
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [codeSnippetData, setCodeSnippetData] = useState<{ code: string; count: number } | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const copyShareLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  };
 
   const { data: project, isLoading: projectLoading, error: projectError } = useProject(projectId);
   const { data: vizData, isLoading: vizLoading, error: vizError } = useVisualization(projectId);
@@ -88,6 +97,23 @@ export function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <button
+              onClick={copyShareLink}
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              title="Copy share link"
+            >
+              {linkCopied ? (
+                <>
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span className="text-green-500 text-sm">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Link2 className="w-4 h-4" />
+                  <span className="text-sm hidden sm:inline">Share</span>
+                </>
+              )}
+            </button>
             <button
               onClick={() => setExportModalOpen(true)}
               disabled={selectedIndices.size === 0}

@@ -3,7 +3,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { UploadZone } from '../components/UploadZone';
-import { BarChart3, Target, Download, Zap, Settings, Database, ArrowRight, ExternalLink } from 'lucide-react';
+import { BarChart3, Target, Download, Zap, Settings, Database, ArrowRight, ExternalLink, CheckCircle, Tag, Play } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import axios from 'axios';
 
@@ -15,6 +15,111 @@ interface ExampleProject {
   embedding_dim: number;
   has_success_labels: boolean;
   has_task_labels: boolean;
+  has_thumbnails: boolean;
+  has_gifs: boolean;
+}
+
+// Loading skeleton for example cards
+function ExampleCardSkeleton() {
+  return (
+    <div className="flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden animate-pulse">
+      <div className="w-full h-36 bg-gray-200 dark:bg-gray-700" />
+      <div className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+          <div className="flex-1">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExampleCard({ example }: { example: ExampleProject }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Determine which preview to show
+  const hasPreview = example.has_gifs || example.has_thumbnails;
+  const staticSrc = example.has_gifs
+    ? `/api/project/${example.id}/gif/0/frame`  // First frame of GIF
+    : example.has_thumbnails
+      ? `/api/project/${example.id}/thumbnail/0`
+      : null;
+  const animatedSrc = example.has_gifs
+    ? `/api/project/${example.id}/gif/0`
+    : null;
+
+  // Build feature badges
+  const badges = [];
+  if (example.has_success_labels) badges.push({ icon: CheckCircle, label: 'Success labels', color: 'text-green-500' });
+  if (example.has_task_labels) badges.push({ icon: Tag, label: 'Task labels', color: 'text-blue-500' });
+  if (example.has_gifs) badges.push({ icon: Play, label: 'Video previews', color: 'text-purple-500' });
+
+  return (
+    <Link
+      to={`/project/${example.id}`}
+      className="group flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all snap-start overflow-hidden relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Preview Image */}
+      {hasPreview && (
+        <div className="w-full h-36 bg-gray-100 dark:bg-gray-700 relative overflow-hidden">
+          {staticSrc && (
+            <img
+              src={isHovered && animatedSrc ? animatedSrc : staticSrc}
+              alt={`Preview of ${example.dataset_name || 'dataset'}`}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          )}
+          {/* Play indicator when GIF available */}
+          {example.has_gifs && !isHovered && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-gray-800 border-b-[6px] border-b-transparent ml-1" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Card Content */}
+      <div className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
+            <Database className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+              {example.dataset_name || `Dataset ${example.id}`}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {example.n_episodes.toLocaleString()} episodes · {example.embedding_dim}D
+            </p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
+        </div>
+      </div>
+
+      {/* Feature badges overlay on image */}
+      {hasPreview && badges.length > 0 && (
+        <div className="absolute top-2 left-2 flex flex-wrap gap-1 z-10">
+          {badges.map((badge, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-1 px-1.5 py-0.5 bg-black/70 text-white text-xs rounded"
+            >
+              <badge.icon className={`w-3 h-3 ${badge.color}`} />
+              <span className="hidden group-hover:inline">{badge.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Link>
+  );
 }
 
 export function Home() {
@@ -80,7 +185,7 @@ export function Home() {
         </div>
 
         {/* Example Projects - Horizontal Carousel */}
-        {!loadingExamples && examples.length > 0 && (
+        {(loadingExamples || examples.length > 0) && (
           <div className="mb-12">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -90,28 +195,18 @@ export function Home() {
             </div>
             <div className="relative -mx-4 px-4">
               <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-thin">
-                {examples.map((example) => (
-                  <Link
-                    key={example.id}
-                    to={`/project/${example.id}`}
-                    className="group flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all snap-start"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
-                        <Database className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                          {example.dataset_name || `Dataset ${example.id}`}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {example.n_episodes.toLocaleString()} episodes · {example.embedding_dim}D
-                        </p>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
-                    </div>
-                  </Link>
-                ))}
+                {loadingExamples ? (
+                  // Loading skeletons
+                  <>
+                    <ExampleCardSkeleton />
+                    <ExampleCardSkeleton />
+                    <ExampleCardSkeleton />
+                  </>
+                ) : (
+                  examples.map((example) => (
+                    <ExampleCard key={example.id} example={example} />
+                  ))
+                )}
               </div>
               {/* Fade edges */}
               <div className="absolute left-0 top-0 bottom-3 w-4 bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent pointer-events-none" />
